@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Jeu de plateforme en temps réel</title>
+    <style>
+        #gameCanvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script>
+        // Initialisation du canvas et du contexte 2D
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Personnage
+        const player = {
+            x: 50,
+            y: 50,
+            width: 30,
+            height: 45,
+            speed: 5,
+            jumping: false,
+            jumpPower: 10,
+            velocityY: 0,
+            direction: "right", // Ajouter la direction du personnage
+        };
+
+        // Plateformes
+        const platforms = [
+            { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 }, // Plateforme au sol
+            { x: 200, y: 300, width: 100, height: 20 }, // Première plateforme
+            { x: 400, y: 200, width: 100, height: 20 }, // Deuxième plateforme
+        ];
+
+        // Projectiles (boules rouges)
+        const projectiles = [];
+
+        // Gestion des entrées clavier
+        const keys = {};
+        window.addEventListener("keydown", (e) => {
+            keys[e.key] = true;
+
+            // Mettre à jour la direction du personnage lorsqu'il se déplace vers la gauche ou vers la droite
+            if (e.key === "ArrowLeft") {
+                player.direction = "left";
+            } else if (e.key === "ArrowRight") {
+                player.direction = "right";
+            }
+
+            // Tirer une boule rouge (projectile)
+            if (e.key === " ") {
+                const projectile = {
+                    x: player.x + player.width / 2,
+                    y: player.y + player.height / 2,
+                    radius: 5,
+                    speed: 8,
+                    direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
+                };
+                projectiles.push(projectile);
+            }
+        });
+        window.addEventListener("keyup", (e) => {
+            keys[e.key] = false;
+        });
+
+        // Tableau des sprites du personnage
+        const playerSprites = [];
+
+        // Chargement des images pour l'animation du personnage
+        const numSprites = 6; // Nombre d'images pour l'animation
+        const playerSpriteBaseName = "player_walk"; // Nom de base des images (par exemple, "player_walk_1.png", "player_walk_2.png", ...)
+        for (let i = 1; i <= numSprites; i++) {
+            const img = new Image();
+            img.src = `${playerSpriteBaseName}_${i}.png`;
+            playerSprites.push(img);
+        }
+
+        // Index pour l'animation du personnage
+        let playerSpriteIndex = 0;
+
+        // Délai entre chaque changement de sprite (plus la valeur est grande, plus l'animation est lente)
+        const animationDelay = 10;
+        let currentAnimationDelay = 0;
+
+        // Fonction de mise à jour du jeu
+        function update() {
+            const prevX = player.x;
+            const prevY = player.y;
+
+            // Déplacement horizontal du personnage
+            if (keys["ArrowLeft"]) {
+                player.x -= player.speed;
+            }
+            if (keys["ArrowRight"]) {
+                player.x += player.speed;
+            }
+
+            // Saut du personnage
+            if (keys["ArrowUp"] && !player.jumping) {
+                player.jumping = true;
+                player.velocityY = -player.jumpPower;
+            }
+
+            // Gravité
+            const gravity = 0.5;
+            player.velocityY += gravity;
+            player.y += player.velocityY;
+
+            // Empêcher le personnage de sortir du canvas par les côtés
+            if (player.x < 0) {
+                player.x = 0;
+            } else if (player.x + player.width > canvas.width) {
+                player.x = canvas.width - player.width;
+            }
+
+            // Mise à jour des projectiles (boules rouges)
+            projectiles.forEach((projectile) => {
+                if (projectile.direction === "right") {
+                    projectile.x += projectile.speed;
+                } else {
+                    projectile.x -= projectile.speed;
+                }
+            });
+
+            // Supprimer les projectiles qui sortent du canvas
+            projectiles.forEach((projectile, index) => {
+                if (projectile.x < 0 || projectile.x > canvas.width) {
+                    projectiles.splice(index, 1);
+                }
+            });
+
+            // Effacer le canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dessiner les plateformes
+            ctx.fillStyle = "gray";
+            platforms.forEach((platform) => {
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            });
+
+            // Dessiner les projectiles (boules rouges)
+            ctx.fillStyle = "red";
+            projectiles.forEach((projectile) => {
+                ctx.beginPath();
+                ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Vérifier les collisions avec les plateformes
+            platforms.forEach((platform) => {
+                if (
+                    player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y + player.height > platform.y &&
+                    player.y < platform.y + platform.height
+                ) {
+                    // Collision avec la plateforme par le bas
+                    if (prevY + player.height <= platform.y) {
+                        player.jumping = false;
+                        player.velocityY = 0;
+                        player.y = platform.y - player.height;
+                    }
+                    // Collision avec la plateforme par le haut
+                    if (prevY >= platform.y + platform.height) {
+                        player.velocityY = 0;
+                        player.y = platform.y + platform.height;
+                    }
+                    // Collision avec la plateforme par la gauche
+                    if (prevX + player.width <= platform.x) {
+                        player.x = platform.x - player.width;
+                    }
+                    // Collision avec la plateforme par la droite
+                    if (prevX >= platform.x + platform.width) {
+                        player.x = platform.x + platform.width;
+                    }
+                }
+            });
+
+            // Empêcher le joueur de sortir du canvas par le bas
+            if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height;
+                player.jumping = false;
+                player.velocityY = 0;
+            }
+
+            // Mise à jour de l'animation du personnage (à chaque 5ème mise à jour)
+            currentAnimationDelay++;
+            if (currentAnimationDelay >= animationDelay) {
+                currentAnimationDelay = 0;
+                if (playerSpriteIndex < numSprites - 1) {
+                    playerSpriteIndex++;
+                } else {
+                    playerSpriteIndex = 0;
+                }
+            }
+
+            // Dessiner le personnage avec l'image d'animation appropriée
+            const playerImage = playerSprites[playerSpriteIndex];
+            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+
+            // Appel récursif pour mettre à jour en temps réel
+            requestAnimationFrame(update);
+        }
+
+        // Démarrer le jeu
+        playerSprites[0].onload = function () {
+            update();
+        };
+    </script>
+</body>
+
+</html>
