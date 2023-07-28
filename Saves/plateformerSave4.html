@@ -58,29 +58,24 @@
         // Projectiles (boules rouges)
         const projectiles = [];
 
-        // Gestion des entrées clavier
         const keys = {};
         window.addEventListener("keydown", (e) => 
         {
             keys[e.key] = true;
-            handleKeyPress();
+
+            // Mettre à jour la direction du personnage en fonction des touches enfoncées
+            if (keys["ArrowLeft"]) 
+            {
+                player.direction = "left";
+            } else if (keys["ArrowRight"]) 
+            {
+                player.direction = "right";
+            }
         });
         window.addEventListener("keyup", (e) => 
         {
             keys[e.key] = false;
-            handleKeyPress();
         });
-
-        // Fonction de Gestion des entrées clavier dont le TIR du personnage
-        function handleKeyPress() 
-        {
-            // Mettre à jour la direction du personnage en fonction des touches enfoncées
-            if (keys["ArrowLeft"]) {
-                player.direction = "left";
-            } else if (keys["ArrowRight"]) {
-                player.direction = "right";
-            }
-        }
 
         // Tableaux des sprites du personnage
         const playerSprites = 
@@ -153,9 +148,9 @@
         const timeBetweenShots = 0.05; // Temps en secondes entre chaque tir
         let lastShotTime = 0;
 
-        // Variables pour gérer l'état de pression des touches
+        // Variable pour gérer l'état de pression de la barre d'espace
         let spaceKeyPressed = false;
-        let upKeyPressed = false;
+
 
         // Fonction pour gérer les tirs
         function handleShooting() 
@@ -164,37 +159,19 @@
             if (keys[" "] && !spaceKeyPressed) 
             {
                 spaceKeyPressed = true;
-                // Vérifier si le délai entre les tirs est respecté
-                const currentTime = Date.now() / 1000; // Temps actuel en secondes
-                if (currentTime - lastShotTime >= timeBetweenShots) {
-                    lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
-                    const projectile = 
-                    {
-                        x: player.x + (player.direction === "right" ? player.width : 0),
-                        y: player.y + player.height / 2,
-                        radius: 4,
-                        speed: 10,
-                        direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
-                    };
-                    projectiles.push(projectile);
+                // Mettre à jour la direction du personnage en fonction de la touche enfoncée pour tirer
+                if (keys["ArrowLeft"]) 
+                {
+                    player.direction = "left";
+                } 
+                else if (keys["ArrowRight"]) 
+                {
+                    player.direction = "right";
                 }
-            } 
-            else if (!keys[" "]) 
-            {
-                // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
-                spaceKeyPressed = false;
-            }
-        }
-
-        function handleAutomaticShooting() 
-        {
-            // Vérifier si la barre d'espace est enfoncée
-            if (keys[" "] && keys["ArrowUp"] && keys["ArrowLeft"]) 
-            {
-                spaceKeyPressed = true;
                 // Vérifier si le délai entre les tirs est respecté
                 const currentTime = Date.now() / 1000; // Temps actuel en secondes
-                if (currentTime - lastShotTime >= timeBetweenShots) {
+                if (currentTime - lastShotTime >= timeBetweenShots) 
+                {
                     lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
                     const projectile = 
                     {
@@ -241,11 +218,9 @@
             });
 
             // Saut du personnage
-            if (keys["ArrowUp"] && !player.jumping) 
-            {
+            if (keys["ArrowUp"] && !player.jumping) {
                 player.jumping = true;
                 player.velocityY = -player.jumpPower;
-                upKeyPressed = true; // La touche "Flèche du haut" est enfoncée lors du saut
             }
 
             // Gravité
@@ -256,58 +231,41 @@
             // Empêcher le personnage de sortir du canvas par les côtés
             if (player.x < 20) {
                 player.x = 20;
-            } else if (player.x + player.width > levelWidth - 20) 
-            {
+            } else if (player.x + player.width > levelWidth - 20) {
                 player.x = levelWidth - player.width - 20;
             }
 
             // Mettre à jour le défilement du niveau en fonction du mouvement du joueur
-            if (player.x - scrollOffset > canvas.width / 2) 
-            {
+            if (player.x - scrollOffset > canvas.width / 2) {
                 scrollOffset = player.x - canvas.width / 2;
-            } 
-            else if (player.x - scrollOffset < canvas.width / 2 - player.width) 
-            {
+            } else if (player.x - scrollOffset < canvas.width / 2 - player.width) {
                 scrollOffset = player.x - canvas.width / 2 + player.width;
             }
 
             // Mise à jour des projectiles (boules rouges)
-            projectiles.forEach((projectile) => 
-            {
-                if (projectile.direction === "right") 
-                {
+            projectiles.forEach((projectile) => {
+                if (projectile.direction === "right") {
                     projectile.x += projectile.speed;
-                } 
-                else 
-                {
+                } else {
                     projectile.x -= projectile.speed;
                 }
             });
 
             // Gérer les tirs du joueur
             handleShooting();  
-            handleAutomaticShooting();
-
-            // Réinitialiser l'état de la touche "Flèche du haut" lorsque la touche est relâchée
-            if (!keys["ArrowUp"]) 
-            {
-                upKeyPressed = false;
-            }
 
             // Effacer le canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Dessiner les plateformes
             ctx.fillStyle = "gray";
-            platforms.forEach((platform) => 
-            {
+            platforms.forEach((platform) => {
                 ctx.fillRect(platform.x - scrollOffset, platform.y, platform.width, platform.height);
             });
 
-            // Dessiner les projectiles (boules noires)
+            // Dessiner les projectiles (boules rouges)
             ctx.fillStyle = "black";
-            projectiles.forEach((projectile) => 
-            {
+            projectiles.forEach((projectile) => {
                 ctx.beginPath();
                 ctx.arc(projectile.x - scrollOffset, projectile.y, projectile.radius, 0, Math.PI * 2);
                 ctx.fill();
@@ -379,4 +337,3 @@
     </script>
 </body>
 </html>
-
