@@ -1,382 +1,506 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Jeu de plateforme en temps réel</title>
-    <style>
-        #gameCanvas 
-        {
-            border: 1px solid black;
-        }
-        body
-        {
-            text-align: center;
-        }
-    </style>
-</head>
-
-<body>
-
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
-
-    <script>
-        
-        // Initialisation du canvas et du contexte 2D
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-
-        // Dimensions du niveau
-        const levelWidth = 4000; // Longueur du niveau (plus grand vers la droite)
-        const levelHeight = canvas.height;
-
-        // Variable pour suivre le défilement du niveau
-        let scrollOffset = 0;
-
-        // Personnage
-        const player = 
-        {
-            x: 10,
-            y: 50,
-            width: 30,
-            height: 45,
-            speed: 4,
-            jumping: false,
-            jumpPower: 10,
-            velocityY: 0,
-            direction: "right", // Ajouter la direction du personnage
-        };
-
-        // Plateformes
-        const platforms = [
-            { x: 0, y: canvas.height - 20, width: levelWidth, height: 20 }, // Plateforme au sol
-            { x: 200, y: 300, width: 100, height: 20 }, // Première plateforme
-            { x: 400, y: 250, width: 100, height: 20 }, // Deuxième plateforme
-            { x: 500, y: 150, width: 100, height: 20 },
-            { x: 600, y: 250, width: 100, height: 20 },
-            { x: 750, y: 100, width: 100, height: 20 },
-        ];
-
-        // Projectiles (boules rouges)
-        const projectiles = [];
-
-        // Gestion des entrées clavier
-        const keys = {};
-        window.addEventListener("keydown", (e) => 
-        {
-            keys[e.key] = true;
-            handleKeyPress();
-        });
-        window.addEventListener("keyup", (e) => 
-        {
-            keys[e.key] = false;
-            handleKeyPress();
-        });
-
-        // Fonction de Gestion des entrées clavier dont le TIR du personnage
-        function handleKeyPress() 
-        {
-            // Mettre à jour la direction du personnage en fonction des touches enfoncées
-            if (keys["ArrowLeft"]) {
-                player.direction = "left";
-            } else if (keys["ArrowRight"]) {
-                player.direction = "right";
-            }
-        }
-
-        // Tableaux des sprites du personnage
-        const playerSprites = 
-        {
-            walkRight: [],
-            walkLeft: [],
-            idleRight: [],
-            idleLeft: [],
-            jumpRight: [],
-            jumpLeft: [],
-        };
-
-        // Chargement des images pour l'animation du personnage
-        const numSprites = 6; // Nombre d'images pour l'animation
-        const playerSpriteBaseName = "player"; // Nom de base des images (par exemple, "player_walk_1.png", "player_idle_1.png", ...)
-        for (let i = 1; i <= numSprites; i++) 
-        {
-            const walkRightImg = new Image();
-            const walkLeftImg = new Image();
-            const idleRightImg = new Image();
-            const idleLeftImg = new Image();
-            const jumpRightImg = new Image();
-            const jumpLeftImg = new Image();
-
-            walkRightImg.src = `${playerSpriteBaseName}_walk_${i}.png`;
-            walkLeftImg.src = `${playerSpriteBaseName}_walk_left_${i}.png`;
-            idleRightImg.src = `${playerSpriteBaseName}_idle_${i}.png`;
-            idleLeftImg.src = `${playerSpriteBaseName}_idle_left_${i}.png`;
-            jumpRightImg.src = `${playerSpriteBaseName}_jump_${i}.png`;
-            jumpLeftImg.src = `${playerSpriteBaseName}_jump_left_${i}.png`;
-
-            playerSprites.walkRight.push(walkRightImg);
-            playerSprites.walkLeft.push(walkLeftImg);
-            playerSprites.idleRight.push(idleRightImg);
-            playerSprites.idleLeft.push(idleLeftImg);
-            playerSprites.jumpRight.push(jumpRightImg);
-            playerSprites.jumpLeft.push(jumpLeftImg);
-        }
-
-        // Index pour l'animation du personnage
-        let playerSpriteIndex = 0;
-
-        // Délai entre chaque changement de sprite (plus la valeur est grande, plus l'animation est lente)
-        const animationDelay = 10;
-        let currentAnimationDelay = 0;
-
-        // Fonction pour dessiner le personnage avec le sprite approprié
-        function drawPlayer() 
-        {
-            let playerImage;
-            let isMoving = keys["ArrowLeft"] || keys["ArrowRight"];
-
-            if (player.jumping) {
-                playerImage = player.direction === "right" ? playerSprites.jumpRight[playerSpriteIndex] : playerSprites.jumpLeft[playerSpriteIndex];
-            } else if (isMoving) {
-                playerImage = player.direction === "right" ? playerSprites.walkRight[playerSpriteIndex] : playerSprites.walkLeft[playerSpriteIndex];
-            } else if (keys[" "]) {
-                playerImage = player.direction === "right" ? playerSprites.jumpRight[0] : playerSprites.jumpLeft[0];
-            } else {
-                playerImage = player.direction === "right" ? playerSprites.idleRight[playerSpriteIndex] : playerSprites.idleLeft[playerSpriteIndex];
-            }
-
-            ctx.drawImage(playerImage, player.x - scrollOffset, player.y, player.width, player.height);
-        }
-
-        // Position totale du joueur
-        let playerTotalX = player.x;
-
-        // Variables pour le délai entre chaque tir
-        const timeBetweenShots = 0.05; // Temps en secondes entre chaque tir
-        let lastShotTime = 0;
-
-        // Variables pour gérer l'état de pression des touches
-        let spaceKeyPressed = false;
-        let upKeyPressed = false;
-
-        // Fonction pour gérer les tirs
-        function handleShooting() 
-        {
-            // Vérifier si la barre d'espace est enfoncée
-            if (keys[" "] && !spaceKeyPressed) 
+    <head>
+        <title> Jeu de plateforme en temps réel </title>
+        <style>
+            #gameCanvas 
             {
-                spaceKeyPressed = true;
-                // Vérifier si le délai entre les tirs est respecté
-                const currentTime = Date.now() / 1000; // Temps actuel en secondes
-                if (currentTime - lastShotTime >= timeBetweenShots) {
-                    lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
-                    const projectile = 
-                    {
-                        x: player.x + (player.direction === "right" ? player.width : 0),
-                        y: player.y + player.height / 2,
-                        radius: 4,
-                        speed: 10,
-                        direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
-                    };
-                    projectiles.push(projectile);
-                }
-            } 
-            else if (!keys[" "]) 
-            {
-                // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
-                spaceKeyPressed = false;
+                border: 1px solid black;
             }
-        }
-
-        function handleAutomaticShooting() 
-        {
-            // Vérifier si la barre d'espace est enfoncée
-            if (keys[" "] && keys["ArrowUp"] && keys["ArrowLeft"]) 
+            body
             {
-                spaceKeyPressed = true;
-                // Vérifier si le délai entre les tirs est respecté
-                const currentTime = Date.now() / 1000; // Temps actuel en secondes
-                if (currentTime - lastShotTime >= timeBetweenShots) {
-                    lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
-                    const projectile = 
-                    {
-                        x: player.x + (player.direction === "right" ? player.width : 0),
-                        y: player.y + player.height / 2,
-                        radius: 4,
-                        speed: 10,
-                        direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
-                    };
-                    projectiles.push(projectile);
-                }
-            } 
-            else if (!keys[" "]) 
+                text-align: center;
+            }
+            .control-button 
             {
-                // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
-                spaceKeyPressed = false;
+                width: 50px;
+                height: 50px;
+                margin: 5px;
+                font-size: 20px;
+                cursor: pointer;
             }
-        }
-
-        // Fonction de mise à jour du jeu
-        function update() 
-        {
-            const prevX = player.x;
-            const prevY = player.y;
-
-            // Déplacement horizontal du personnage
-            if (keys["ArrowLeft"]) {
-                player.x -= player.speed;
-            }
-            if (keys["ArrowRight"]) {
-                player.x += player.speed;
-            }
-
-            // Mettre à jour la position totale du joueur avec le scrollOffset
-            playerTotalX = player.x - scrollOffset;
-
-            // Ne pas supprimer les projectiles lorsque leur position x dépasse les limites du niveau
-            projectiles.forEach((projectile, index) => 
+            #shoot-button 
             {
-                if (projectile.x < playerTotalX || projectile.x > playerTotalX + levelWidth) 
-                {
-                    projectiles.splice(index, 1);
-                }
+                position: absolute;
+                right: 10px;
+                bottom: 10px;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <div>
+            <div class="control-button" id="left-button">◀</div>
+            <div class="control-button" id="jump-button">▲</div>
+            <div class="control-button" id="right-button">▶</div>
+        </div>
+        <div class="control-button" id="shoot-button">SHOOT</div>
+
+        <script>
+
+            // Variables pour gérer les états de contrôle
+            let leftButtonPressed = false;
+            let rightButtonPressed = false;
+            let jumpButtonPressed = false;
+
+            // Récupération des boutons de contrôle du DOM
+            const leftButton = document.getElementById("left-button");
+            const rightButton = document.getElementById("right-button");
+            const jumpButton = document.getElementById("jump-button");
+            const shootButton = document.getElementById("shoot-button");
+
+            // Gestion des événements de clic pour les boutons de contrôle
+            leftButton.addEventListener("touchstart", () => 
+            {
+                leftButtonPressed = true;
             });
 
-            // Saut du personnage
-            if (keys["ArrowUp"] && !player.jumping) 
+            leftButton.addEventListener("touchend", () => 
             {
-                player.jumping = true;
-                player.velocityY = -player.jumpPower;
-                upKeyPressed = true; // La touche "Flèche du haut" est enfoncée lors du saut
-            }
+                leftButtonPressed = false;
+            });
 
-            // Gravité
-            const gravity = 0.5;
-            player.velocityY += gravity;
-            player.y += player.velocityY;
+            rightButton.addEventListener("touchstart", () => 
+            {
+                rightButtonPressed = true;
+            });
 
-            // Empêcher le personnage de sortir du canvas par les côtés
-            if (player.x < 20) {
-                player.x = 20;
-            } else if (player.x + player.width > levelWidth - 20) 
+            rightButton.addEventListener("touchend", () => 
             {
-                player.x = levelWidth - player.width - 20;
-            }
+                rightButtonPressed = false;
+            });
 
-            // Mettre à jour le défilement du niveau en fonction du mouvement du joueur
-            if (player.x - scrollOffset > canvas.width / 2) 
+            jumpButton.addEventListener("touchstart", () => 
             {
-                scrollOffset = player.x - canvas.width / 2;
-            } 
-            else if (player.x - scrollOffset < canvas.width / 2 - player.width) 
-            {
-                scrollOffset = player.x - canvas.width / 2 + player.width;
-            }
+                jumpButtonPressed = true;
+            });
 
-            // Mise à jour des projectiles (boules rouges)
-            projectiles.forEach((projectile) => 
+            jumpButton.addEventListener("touchend", () => 
             {
-                if (projectile.direction === "right") 
+                jumpButtonPressed = false;
+            });
+
+            shootButton.addEventListener("touchstart", () => 
+            {
+                keys[" "] = true;
+            });
+
+            shootButton.addEventListener("touchend", () => 
+            {
+                keys[" "] = false;
+            });
+            
+            // Initialisation du canvas et du contexte 2D
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+
+            // Dimensions du niveau
+            const levelWidth = 4000; // Longueur du niveau (plus grand vers la droite)
+            const levelHeight = canvas.height;
+
+            // Variable pour suivre le défilement du niveau
+            let scrollOffset = 0;
+
+            // Personnage
+            const player = 
+            {
+                x: 10,
+                y: 50,
+                width: 30,
+                height: 45,
+                speed: 4,
+                jumping: false,
+                jumpPower: 10,
+                velocityY: 0,
+                direction: "right", // Ajouter la direction du personnage
+            };
+
+            // Plateformes
+            const platforms = [
+                { x: 0, y: canvas.height - 20, width: levelWidth, height: 20 }, // Plateforme au sol
+                { x: 200, y: 300, width: 100, height: 20 }, // Première plateforme
+                { x: 400, y: 250, width: 100, height: 20 }, // Deuxième plateforme
+                { x: 500, y: 150, width: 100, height: 20 },
+                { x: 600, y: 250, width: 100, height: 20 },
+                { x: 750, y: 100, width: 100, height: 20 },
+            ];
+
+            // Projectiles (boules rouges)
+            const projectiles = [];
+
+            // Gestion des entrées clavier
+            const keys = {};
+            window.addEventListener("keydown", (e) => 
+            {
+                keys[e.key] = true;
+                handleKeyPress();
+            });
+            window.addEventListener("keyup", (e) => 
+            {
+                keys[e.key] = false;
+                handleKeyPress();
+            });
+
+            // Fonction de Gestion des entrées clavier dont le TIR du personnage
+            function handleKeyPress() 
+            {
+                // Mettre à jour la direction du personnage en fonction des touches enfoncées
+                if (keys["ArrowLeft"]) 
                 {
-                    projectile.x += projectile.speed;
+                    player.direction = "left";
+                } 
+                else if (keys["ArrowRight"]) 
+                {
+                    player.direction = "right";
+                }
+            }
+
+            // Tableaux des sprites du personnage
+            const playerSprites = 
+            {
+                walkRight: [],
+                walkLeft: [],
+                idleRight: [],
+                idleLeft: [],
+                jumpRight: [],
+                jumpLeft: [],
+            };
+
+            // Chargement des images pour l'animation du personnage
+            const numSprites = 6; // Nombre d'images pour l'animation
+            const playerSpriteBaseName = "player"; // Nom de base des images (par exemple, "player_walk_1.png", "player_idle_1.png", ...)
+            for (let i = 1; i <= numSprites; i++) 
+            {
+                const walkRightImg = new Image();
+                const walkLeftImg = new Image();
+                const idleRightImg = new Image();
+                const idleLeftImg = new Image();
+                const jumpRightImg = new Image();
+                const jumpLeftImg = new Image();
+
+                walkRightImg.src = `${playerSpriteBaseName}_walk_${i}.png`;
+                walkLeftImg.src = `${playerSpriteBaseName}_walk_left_${i}.png`;
+                idleRightImg.src = `${playerSpriteBaseName}_idle_${i}.png`;
+                idleLeftImg.src = `${playerSpriteBaseName}_idle_left_${i}.png`;
+                jumpRightImg.src = `${playerSpriteBaseName}_jump_${i}.png`;
+                jumpLeftImg.src = `${playerSpriteBaseName}_jump_left_${i}.png`;
+
+                playerSprites.walkRight.push(walkRightImg);
+                playerSprites.walkLeft.push(walkLeftImg);
+                playerSprites.idleRight.push(idleRightImg);
+                playerSprites.idleLeft.push(idleLeftImg);
+                playerSprites.jumpRight.push(jumpRightImg);
+                playerSprites.jumpLeft.push(jumpLeftImg);
+            }
+
+            // Index pour l'animation du personnage
+            let playerSpriteIndex = 0;
+
+            // Délai entre chaque changement de sprite (plus la valeur est grande, plus l'animation est lente)
+            const animationDelay = 10;
+            let currentAnimationDelay = 0;
+
+            // Fonction pour dessiner le personnage avec le sprite approprié
+            function drawPlayer() 
+            {
+                let playerImage;
+                let isMoving = keys["ArrowLeft"] || keys["ArrowRight"];
+                if (player.jumping) 
+                {
+                    playerImage = player.direction === "right" ? playerSprites.jumpRight[playerSpriteIndex] : playerSprites.jumpLeft[playerSpriteIndex];
+                } 
+                else if (isMoving) 
+                {
+                    playerImage = player.direction === "right" ? playerSprites.walkRight[playerSpriteIndex] : playerSprites.walkLeft[playerSpriteIndex];
+                } 
+                else if (keys[" "]) 
+                {
+                    playerImage = player.direction === "right" ? playerSprites.jumpRight[0] : playerSprites.jumpLeft[0];
                 } 
                 else 
                 {
-                    projectile.x -= projectile.speed;
+                    playerImage = player.direction === "right" ? playerSprites.idleRight[playerSpriteIndex] : playerSprites.idleLeft[playerSpriteIndex];
                 }
-            });
-
-            // Gérer les tirs du joueur
-            handleShooting();  
-            handleAutomaticShooting();
-
-            // Réinitialiser l'état de la touche "Flèche du haut" lorsque la touche est relâchée
-            if (!keys["ArrowUp"]) 
-            {
-                upKeyPressed = false;
+                ctx.drawImage(playerImage, player.x - scrollOffset, player.y, player.width, player.height);
             }
 
-            // Effacer le canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Position totale du joueur
+            let playerTotalX = player.x;
 
-            // Dessiner les plateformes
-            ctx.fillStyle = "gray";
-            platforms.forEach((platform) => 
-            {
-                ctx.fillRect(platform.x - scrollOffset, platform.y, platform.width, platform.height);
-            });
+            // Variables pour le délai entre chaque tir
+            const timeBetweenShots = 0.05; // Temps en secondes entre chaque tir
+            let lastShotTime = 0;
 
-            // Dessiner les projectiles (boules noires)
-            ctx.fillStyle = "black";
-            projectiles.forEach((projectile) => 
-            {
-                ctx.beginPath();
-                ctx.arc(projectile.x - scrollOffset, projectile.y, projectile.radius, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            // Variables pour gérer l'état de pression des touches
+            let spaceKeyPressed = false;
+            let upKeyPressed = false;
 
-            // Vérifier les collisions avec les plateformes
-            platforms.forEach((platform) => 
+            // Fonction pour gérer les tirs
+            function handleShooting() 
             {
-                if (
-                    player.x < platform.x + platform.width &&
-                    player.x + player.width > platform.x &&
-                    player.y + player.height > platform.y &&
-                    player.y < platform.y + platform.height
-                ) {
-                    // Collision avec la plateforme par le bas
-                    if (prevY + player.height <= platform.y) {
-                        player.jumping = false;
-                        player.velocityY = 0;
-                        player.y = platform.y - player.height;
+                // Vérifier si la barre d'espace est enfoncée
+                if (keys[" "] && !spaceKeyPressed) 
+                {
+                    spaceKeyPressed = true;
+                    // Vérifier si le délai entre les tirs est respecté
+                    const currentTime = Date.now() / 1000; // Temps actuel en secondes
+                    if (currentTime - lastShotTime >= timeBetweenShots) {
+                        lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
+                        const projectile = 
+                        {
+                            x: player.x + (player.direction === "right" ? player.width : 0),
+                            y: player.y + player.height / 2,
+                            radius: 4,
+                            speed: 10,
+                            direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
+                        };
+                        projectiles.push(projectile);
                     }
-                    // Collision avec la plateforme par le haut
-                    if (prevY >= platform.y + platform.height) {
-                        player.velocityY = 0;
-                        player.y = platform.y + platform.height;
-                    }
-                    // Collision avec la plateforme par la gauche
-                    if (prevX + player.width <= platform.x) {
-                        player.x = platform.x - player.width;
-                    }
-                    // Collision avec la plateforme par la droite
-                    if (prevX >= platform.x + platform.width) {
-                        player.x = platform.x + platform.width;
-                    }
-                }
-            });
-
-            // Empêcher le joueur de sortir du canvas par le bas
-            if (player.y + player.height > canvas.height) 
-            {
-                player.y = canvas.height - player.height;
-                player.jumping = false;
-                player.velocityY = 0;
-            }
-
-            // Mise à jour de l'animation du personnage (à chaque 5ème mise à jour)
-            currentAnimationDelay++;
-            if (currentAnimationDelay >= animationDelay) 
-            {
-                currentAnimationDelay = 0;
-                if (playerSpriteIndex < numSprites - 1) {
-                    playerSpriteIndex++;
-                } else {
-                    playerSpriteIndex = 0;
+                } 
+                else if (!keys[" "]) 
+                {
+                    // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
+                    spaceKeyPressed = false;
                 }
             }
 
-            // Dessiner le personnage avec le sprite approprié
-            drawPlayer();
+            function handleAutomaticShooting() 
+            {
+                // Vérifier si la barre d'espace est enfoncée
+                if (keys[" "] && keys["ArrowUp"] && keys["ArrowLeft"]) 
+                {
+                    spaceKeyPressed = true;
+                    // Vérifier si le délai entre les tirs est respecté
+                    const currentTime = Date.now() / 1000; // Temps actuel en secondes
+                    if (currentTime - lastShotTime >= timeBetweenShots) {
+                        lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
+                        const projectile = 
+                        {
+                            x: player.x + (player.direction === "right" ? player.width : 0),
+                            y: player.y + player.height / 2,
+                            radius: 4,
+                            speed: 10,
+                            direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
+                        };
+                        projectiles.push(projectile);
+                    }
+                } 
+                else if (!keys[" "]) 
+                {
+                    // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
+                    spaceKeyPressed = false;
+                }
+            }
 
-            // Appel récursif pour mettre à jour en temps réel
-            requestAnimationFrame(update);
-        }
+            // Fonction pour détecter les collisions entre projectiles et plateformes
+            function checkProjectilePlatformCollision() 
+            {
+                // Parcours de tous les projectiles
+                for (let i = 0; i < projectiles.length; i++) 
+                {
+                    const projectile = projectiles[i];
 
-        // Démarrer le jeu
-        playerSprites.walkRight[0].onload = function () 
-        {
-            update();
-        };
-    </script>
-</body>
+                    // Parcours de toutes les plateformes
+                    for (let j = 0; j < platforms.length; j++) 
+                    {
+                        const platform = platforms[j];
+
+                        // Vérification de la collision entre le projectile et la plateforme
+                        if (
+                            projectile.x + projectile.radius >= platform.x && // Collision à droite
+                            projectile.x - projectile.radius <= platform.x + platform.width && // Collision à gauche
+                            projectile.y + projectile.radius >= platform.y && // Collision en bas
+                            projectile.y - projectile.radius <= platform.y + platform.height // Collision en haut
+                        ) 
+                        {
+                            // Supprimer le projectile lorsqu'il touche une plateforme
+                            projectiles.splice(i, 1);
+                            i--; // Décrémenter i pour éviter de sauter un projectile lors du retrait du tableau
+                            break; // Sortir de la boucle interne car le projectile n'existe plus
+                        }
+                    }
+                }
+            }
+
+            // Fonction de mise à jour du jeu
+            function update() 
+            {
+                const prevX = player.x;
+                const prevY = player.y;
+
+                // Déplacement horizontal du personnage
+                if (keys["ArrowLeft"]) 
+                {
+                    player.x -= player.speed;
+                }
+                if (keys["ArrowRight"]) 
+                {
+                    player.x += player.speed;
+                }
+
+                // Mettre à jour la position totale du joueur avec le scrollOffset
+                playerTotalX = player.x - scrollOffset;
+
+                // Ne pas supprimer les projectiles lorsque leur position x dépasse les limites du niveau
+                projectiles.forEach((projectile, index) => 
+                {
+                    if (projectile.x < playerTotalX || projectile.x > playerTotalX + levelWidth) 
+                    {
+                        projectiles.splice(index, 1);
+                    }
+                });
+
+                // Saut du personnage
+                if (keys["ArrowUp"] && !player.jumping) 
+                {
+                    player.jumping = true;
+                    player.velocityY = -player.jumpPower;
+                    upKeyPressed = true; // La touche "Flèche du haut" est enfoncée lors du saut
+                }
+
+                // Gravité
+                const gravity = 0.5;
+                player.velocityY += gravity;
+                player.y += player.velocityY;
+
+                // Empêcher le personnage de sortir du canvas par les côtés
+                if (player.x < 20) 
+                {
+                    player.x = 20;
+                } 
+                else if (player.x + player.width > levelWidth - 20) 
+                {
+                    player.x = levelWidth - player.width - 20;
+                }
+
+                // Mettre à jour le défilement du niveau en fonction du mouvement du joueur
+                if (player.x - scrollOffset > canvas.width / 2) 
+                {
+                    scrollOffset = player.x - canvas.width / 2;
+                } 
+                else if (player.x - scrollOffset < canvas.width / 2 - player.width) 
+                {
+                    scrollOffset = player.x - canvas.width / 2 + player.width;
+                }
+
+                // Avant de mettre à jour la position des projectiles, vérifier les collisions avec les plateformes
+                checkProjectilePlatformCollision();
+
+                // Mise à jour des projectiles (boules rouges)
+                projectiles.forEach((projectile) => 
+                {
+                    if (projectile.direction === "right") 
+                    {
+                        projectile.x += projectile.speed;
+                    } 
+                    else 
+                    {
+                        projectile.x -= projectile.speed;
+                    }
+                });
+
+                // Gérer les tirs du joueur
+                handleShooting();  
+                handleAutomaticShooting();
+
+                // Réinitialiser l'état de la touche "Flèche du haut" lorsque la touche est relâchée
+                if (!keys["ArrowUp"]) 
+                {
+                    upKeyPressed = false;
+                }
+
+                // Effacer le canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Dessiner les plateformes
+                ctx.fillStyle = "gray";
+                platforms.forEach((platform) => 
+                {
+                    ctx.fillRect(platform.x - scrollOffset, platform.y, platform.width, platform.height);
+                });
+
+                // Dessiner les projectiles (boules noires)
+                ctx.fillStyle = "black";
+                projectiles.forEach((projectile) => 
+                {
+                    ctx.beginPath();
+                    ctx.arc(projectile.x - scrollOffset, projectile.y, projectile.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Vérifier les collisions avec les plateformes
+                platforms.forEach((platform) => 
+                {
+                    if (
+                        player.x < platform.x + platform.width &&
+                        player.x + player.width > platform.x &&
+                        player.y + player.height > platform.y &&
+                        player.y < platform.y + platform.height
+                    ) {
+                        // Collision avec la plateforme par le bas
+                        if (prevY + player.height <= platform.y) 
+                        {
+                            player.jumping = false;
+                            player.velocityY = 0;
+                            player.y = platform.y - player.height;
+                        }
+                        // Collision avec la plateforme par le haut
+                        if (prevY >= platform.y + platform.height) 
+                        {
+                            player.velocityY = 0;
+                            player.y = platform.y + platform.height;
+                        }
+                        // Collision avec la plateforme par la gauche
+                        if (prevX + player.width <= platform.x) 
+                        {
+                            player.x = platform.x - player.width;
+                        }
+                        // Collision avec la plateforme par la droite
+                        if (prevX >= platform.x + platform.width) 
+                        {
+                            player.x = platform.x + platform.width;
+                        }
+                    }
+                });
+
+                // Empêcher le joueur de sortir du canvas par le bas
+                if (player.y + player.height > canvas.height) 
+                {
+                    player.y = canvas.height - player.height;
+                    player.jumping = false;
+                    player.velocityY = 0;
+                }
+
+                // Mise à jour de l'animation du personnage (à chaque 5ème mise à jour)
+                currentAnimationDelay++;
+                if (currentAnimationDelay >= animationDelay) 
+                {
+                    currentAnimationDelay = 0;
+                    if (playerSpriteIndex < numSprites - 1) {
+                        playerSpriteIndex++;
+                    } else {
+                        playerSpriteIndex = 0;
+                    }
+                }
+
+                // Dessiner le personnage avec le sprite approprié
+                drawPlayer();
+
+                // Appel récursif pour mettre à jour en temps réel
+                requestAnimationFrame(update);
+            }
+
+            // Démarrer le jeu
+            playerSprites.walkRight[0].onload = function () 
+            {
+                update();
+            };
+        </script>
+
+    </body>
+
 </html>
 
