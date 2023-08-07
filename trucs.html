@@ -15,21 +15,10 @@
                 height: 100%;
                 object-fit: cover;
             }
-            /*
-            html
-            {
-                text-align: center;
-                max-width: 800px;
-                max-height: 400px;
-            }
             body
             {
-                text-align: center;
-                max-width: 800px;
-                max-height: 400px;
-                position: relative;
+                overflow: hidden;
             }
-            */
             /* Cacher la barre d'adresse de Safari sur iOS */
             @media (max-aspect-ratio: 13/9) 
             {
@@ -89,7 +78,7 @@
 
     <body>
 
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <canvas id="gameCanvas" width="700" height="350"></canvas>
 
         <div>
             <div class="control-button" id="left-button">◀</div>
