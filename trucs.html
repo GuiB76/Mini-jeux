@@ -128,14 +128,15 @@
             // Plateformes
             const platforms = 
             [
-                { x: 0, y: canvas.height - 20, width: levelWidth, height: 20 }, // Plateforme au sol
+                { x: 0, y: canvas.height - 10, width: levelWidth, height: 10 }, // Plateforme au sol
                 { x: 0, y: 0, width: 400, height: canvas.height }, // Mur de gauche
                 { x: 3600, y: 0, width: 400, height: canvas.height }, // Mur de droite
-                { x: 500, y: 300, width: 100, height: 20 }, // Première plateforme
-                { x: 600, y: 250, width: 100, height: 20 }, // Deuxième plateforme
-                { x: 700, y: 150, width: 100, height: 20 },
-                { x: 800, y: 250, width: 100, height: 20 },
-                { x: 950, y: 250, width: 100, height: 20 },
+                { x: 500, y: 300, width: 100, height: 10 }, // Première plateforme
+                { x: 600, y: 250, width: 100, height: 10 }, // Deuxième plateforme
+                { x: 700, y: 150, width: 100, height: 10 },
+                { x: 800, y: 250, width: 100, height: 10 },
+                { x: 950, y: 250, width: 100, height: 10 },
+                { x: 1020, y: 200, width: 100, height: 10 }
             ];
 
             // Projectiles (boules rouges)
@@ -226,6 +227,7 @@
                 { playerImage = player.direction === "right" ? playerSprites.jumpRight[0] : playerSprites.jumpLeft[0]; } 
                 else 
                 { playerImage = player.direction === "right" ? playerSprites.idleRight[playerSpriteIndex] : playerSprites.idleLeft[playerSpriteIndex]; }
+                // Faire apparaitre le sprite
                 ctx.drawImage(playerImage, player.x - scrollOffset, player.y, player.width, player.height);
             }
 
@@ -270,35 +272,6 @@
                 }
             }
 
-            function handleAutomaticShooting() 
-            {
-                // Vérifier si la barre d'espace est enfoncée
-                if (keys[" "] && keys["ArrowUp"] && keys["ArrowLeft"] && !spaceKeyPressed) 
-                {
-                    spaceKeyPressed = true;
-                    // Vérifier si le délai entre les tirs est respecté
-                    const currentTime = Date.now() / 1000; // Temps actuel en secondes
-                    if (currentTime - lastShotTime >= timeBetweenShots) 
-                    {
-                        lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
-                        const projectile = 
-                        {
-                            x: player.x + (player.direction === "right" ? player.width : 0),
-                            y: player.y + player.height / 2.7,
-                            radius: 4,
-                            speed: 8,
-                            direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
-                        };
-                        projectiles.push(projectile);
-                    }
-                } 
-                else if (!keys[" "]) 
-                {
-                    // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
-                    spaceKeyPressed = false;
-                }
-            }
-
             // Fonction pour détecter les collisions entre projectiles et plateformes
             function checkProjectilePlatformCollision() 
             {
@@ -306,18 +279,16 @@
                 for (let i = 0; i < projectiles.length; i++) 
                 {
                     const projectile = projectiles[i];
-
                     // Parcours de toutes les plateformes
                     for (let j = 0; j < platforms.length; j++) 
                     {
                         const platform = platforms[j];
-
                         // Vérification de la collision entre le projectile et la plateforme
                         if (
-                            projectile.x + projectile.radius >= platform.x && // Collision à droite
-                            projectile.x - projectile.radius <= platform.x + platform.width && // Collision à gauche
-                            projectile.y + projectile.radius >= platform.y && // Collision en bas
-                            projectile.y - projectile.radius <= platform.y + platform.height // Collision en haut
+                            projectile.x + projectile.radius >= platform.x &&                   // Collision à droite
+                            projectile.x - projectile.radius <= platform.x + platform.width &&  // Collision à gauche
+                            projectile.y + projectile.radius >= platform.y &&                   // Collision en bas
+                            projectile.y - projectile.radius <= platform.y + platform.height    // Collision en haut
                         ) 
                         {
                             // Supprimer le projectile lorsqu'il touche une plateforme
@@ -400,7 +371,6 @@
 
                 // Gérer les tirs du joueur
                 handleShooting();  
-                handleAutomaticShooting();
                 // Gérer les mouvements du personnage
                 handleCharacterMovement();
                 // Mettre à jour le défilement pour suivre le joueur
@@ -494,7 +464,7 @@
             }
 
             // Démarrer le jeu
-            playerSprites.walkRight[0].onload = function () 
+            playerSprites.idleRight[0].onload = function () 
             {
                 update();
             };
