@@ -20,12 +20,20 @@
                 margin: 5px;
                 font-size: 20px;
                 cursor: pointer;
+                border: 2px solid black;
+                display: flex; /* Utiliser flexbox pour centrer le contenu */
+                justify-content: center; /* Centrer horizontalement */
+                align-items: center; /* Centrer verticalement */
+                transition: transform 0.2s;
+            }
+            .control-button.pressed 
+            {
+                transform: scale(1.1); /* Grossissement du bouton lorsqu'il est appuyé */
             }
             #shoot-button 
             {
-                position: absolute;
-                right: 10px;
-                bottom: 10px;
+                width: 70px;
+                height: 70px;
             }
         </style>
     </head>
@@ -61,6 +69,7 @@
             let leftButtonPressed = false;
             let rightButtonPressed = false;
             let jumpButtonPressed = false;
+            let shootButtonPressed = false;
 
             // Récupération des boutons de contrôle du DOM
             const leftButton = document.getElementById("left-button");
@@ -69,34 +78,24 @@
             const shootButton = document.getElementById("shoot-button");
 
             // Gestion des événements de clic pour les boutons de contrôle
-            leftButton.addEventListener("touchstart", () => { leftButtonPressed = true; });
-            leftButton.addEventListener("touchend", () => { leftButtonPressed = false; });
-            rightButton.addEventListener("touchstart", () => { rightButtonPressed = true; });
-            rightButton.addEventListener("touchend", () => { rightButtonPressed = false; });
-            jumpButton.addEventListener("touchstart", () => { jumpButtonPressed = true; });
-            jumpButton.addEventListener("touchend", () =>  { jumpButtonPressed = false; });
-            shootButton.addEventListener("touchstart", () => { shootButtonPressed = true; });
-            shootButton.addEventListener("touchend", () => { shootButtonPressed = false; });
+            leftButton.addEventListener("touchstart", () => { leftButtonPressed = true; leftButton.classList.add("pressed"); });
+            leftButton.addEventListener("touchend", () => { leftButtonPressed = false; leftButton.classList.remove("pressed"); });
+            rightButton.addEventListener("touchstart", () => { rightButtonPressed = true; rightButton.classList.add("pressed"); });
+            rightButton.addEventListener("touchend", () => { rightButtonPressed = false; rightButton.classList.remove("pressed"); });
+            jumpButton.addEventListener("touchstart", () => { jumpButtonPressed = true; jumpButton.classList.add("pressed"); });
+            jumpButton.addEventListener("touchend", () =>  { jumpButtonPressed = false; jumpButton.classList.remove("pressed"); });
+            shootButton.addEventListener("touchstart", () => { shootButtonPressed = true; shootButton.classList.add("pressed"); });
+            shootButton.addEventListener("touchend", () => { shootButtonPressed = false; shootButton.classList.remove("pressed"); });
 
-            // Fonction pour gérer les mouvements du personnage en fonction des états des boutons
+            // Fonction pour gérer les mouvements du personnage en fonction des états des boutons ( mobile )
             function handleCharacterMovement() 
             {
                 // Déplacement vers la gauche
-                if (leftButtonPressed) 
-                {
-                    player.x -= player.speed;
-                }
+                if (leftButtonPressed) { player.x -= player.speed; player.direction = "left"; }
                 // Déplacement vers la droite
-                if (rightButtonPressed) 
-                {
-                    player.x += player.speed;
-                }
+                if (rightButtonPressed) { player.x += player.speed; player.direction = "right"; }
                 // Saut du personnage
-                if (jumpButtonPressed && !player.jumping) 
-                {
-                    player.jumping = true;
-                    player.velocityY = -player.jumpPower;
-                }
+                if (jumpButtonPressed && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
             }
             
             // Initialisation du canvas et du contexte 2D
@@ -159,11 +158,11 @@
             function handleKeyPress() 
             {
                 // Mettre à jour la direction du personnage en fonction des touches enfoncées
-                if (keys["ArrowLeft"]) 
+                if (keys["ArrowLeft"] || leftButtonPressed === true) 
                 {
                     player.direction = "left";
                 } 
-                else if (keys["ArrowRight"]) 
+                else if (keys["ArrowRight"] || rightButtonPressed === true) 
                 {
                     player.direction = "right";
                 }
@@ -218,12 +217,12 @@
             function drawPlayer() 
             {
                 let playerImage;
-                let isMoving = keys["ArrowLeft"] || keys["ArrowRight"];
-                if (player.jumping) 
+                let isMoving = keys["ArrowLeft"] || keys["ArrowRight"] || leftButtonPressed === true || rightButtonPressed === true ;
+                if (player.jumping || jumpButtonPressed === true) 
                 { playerImage = player.direction === "right" ? playerSprites.jumpRight[playerSpriteIndex] : playerSprites.jumpLeft[playerSpriteIndex]; } 
                 else if (isMoving) 
-                { playerImage = player.direction === "right" ? playerSprites.walkRight[playerSpriteIndex] : playerSprites.walkLeft[playerSpriteIndex]; } 
-                else if (keys[" "]) 
+                { playerImage = player.direction === "right" ? playerSprites.walkRight[playerSpriteIndex] : playerSprites.walkLeft[playerSpriteIndex]; }
+                else if (keys[" "] || shootButtonPressed === true) 
                 { playerImage = player.direction === "right" ? playerSprites.jumpRight[0] : playerSprites.jumpLeft[0]; } 
                 else 
                 { playerImage = player.direction === "right" ? playerSprites.idleRight[playerSpriteIndex] : playerSprites.idleLeft[playerSpriteIndex]; }
@@ -245,29 +244,28 @@
             // Fonction pour gérer les tirs
             function handleShooting() 
             {
-                // Vérifier si la barre d'espace est enfoncée
-                if (keys[" "] && !spaceKeyPressed) 
+                // Vérifier si la touche de tir est enfoncée
+                if ((keys[" "] || shootButtonPressed) && !spaceKeyPressed) 
                 {
                     spaceKeyPressed = true;
-                    // Vérifier si le délai entre les tirs est respecté
-                    const currentTime = Date.now() / 1000; // Temps actuel en secondes
+                    // Vérifier le délai entre les tirs
+                    const currentTime = Date.now() / 1000;
                     if (currentTime - lastShotTime >= timeBetweenShots) 
                     {
-                        lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
-                        const projectile = 
+                        lastShotTime = currentTime;
+                        const newProjectile = 
                         {
                             x: player.x + (player.direction === "right" ? player.width : 0),
                             y: player.y + player.height / 2.7,
                             radius: 4,
                             speed: 8,
-                            direction: player.direction, // Utiliser la direction du joueur pour déterminer la direction du projectile
+                            direction: player.direction,
                         };
-                        projectiles.push(projectile);
+                        projectiles.push(newProjectile);
                     }
                 } 
-                else if (!keys[" "]) 
+                else if (!keys[" "] && !shootButtonPressed) 
                 {
-                    // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
                     spaceKeyPressed = false;
                 }
             }
@@ -339,6 +337,13 @@
                     player.velocityY = -player.jumpPower;
                     upKeyPressed = true; // La touche "Flèche du haut" est enfoncée lors du saut
                 }
+                // Saut du personnage sur mobile
+                if ((keys["ArrowUp"] || jumpButtonPressed) && !player.jumping) 
+                {
+                    player.jumping = true;
+                    player.velocityY = -player.jumpPower;
+                    upKeyPressed = true; // La touche "Flèche du haut" est enfoncée lors du saut
+                }
 
                 // Gravité
                 const gravity = 0.5;
@@ -360,7 +365,7 @@
                 // Avant de mettre à jour la position des projectiles, vérifier les collisions avec les plateformes
                 checkProjectilePlatformCollision();
 
-                // Mise à jour des projectiles (boules rouges)
+                // Mise à jour des projectiles (boules noires)
                 projectiles.forEach((projectile) => 
                 {
                     if (projectile.direction === "right") 
