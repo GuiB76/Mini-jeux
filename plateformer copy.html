@@ -47,6 +47,7 @@
             let leftButtonPressed = false;
             let rightButtonPressed = false;
             let jumpButtonPressed = false;
+            let shootButtonPressed = false;
 
             // Récupération des boutons de contrôle du DOM
             const leftButton = document.getElementById("left-button");
@@ -61,8 +62,8 @@
             rightButton.addEventListener("touchend", () => { rightButtonPressed = false; });
             jumpButton.addEventListener("touchstart", () => { jumpButtonPressed = true; });
             jumpButton.addEventListener("touchend", () =>  { jumpButtonPressed = false; });
-            shootButton.addEventListener("touchstart", () => { keys[" "] = true; });
-            shootButton.addEventListener("touchend", () => { keys[" "] = false; });
+            shootButton.addEventListener("touchstart", () => { shootButtonPressed = true; });
+            shootButton.addEventListener("touchend", () => { shootButtonPressed = false; });
             
             // Initialisation du canvas et du contexte 2D
             const canvas = document.getElementById("gameCanvas");
@@ -87,6 +88,7 @@
                 jumpPower: 10,
                 velocityY: 0,
                 direction: "right", // Ajouter la direction du personnage
+                health: 3, // Nombre de points de vie du joueur
             };
 
             // Plateformes
@@ -199,6 +201,10 @@
                     playerImage = player.direction === "right" ? playerSprites.idleRight[playerSpriteIndex] : playerSprites.idleLeft[playerSpriteIndex];
                 }
                 ctx.drawImage(playerImage, player.x - scrollOffset, player.y, player.width, player.height);
+                // Dessiner le nombre de points de vie du joueur
+                ctx.fillStyle = "red";
+                ctx.font = "20px Arial";
+                ctx.fillText(`Health: ${player.health}`, 10, 30);
             }
 
             // Position totale du joueur
@@ -221,7 +227,8 @@
                     spaceKeyPressed = true;
                     // Vérifier si le délai entre les tirs est respecté
                     const currentTime = Date.now() / 1000; // Temps actuel en secondes
-                    if (currentTime - lastShotTime >= timeBetweenShots) {
+                    if (currentTime - lastShotTime >= timeBetweenShots) 
+                    {
                         lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
                         const projectile = 
                         {
@@ -234,7 +241,7 @@
                         projectiles.push(projectile);
                     }
                 } 
-                else if (!keys[" "]) 
+                else if (!keys[" "])
                 {
                     // Réinitialiser l'état de pression de la barre d'espace lorsque la touche est relâchée
                     spaceKeyPressed = false;
@@ -244,12 +251,13 @@
             function handleAutomaticShooting() 
             {
                 // Vérifier si la barre d'espace est enfoncée
-                if (keys[" "] && keys["ArrowUp"] && keys["ArrowLeft"]) 
+                if (keys[" "] && keys["ArrowUp"] && keys["ArrowLeft"] && !spaceKeyPressed) 
                 {
                     spaceKeyPressed = true;
                     // Vérifier si le délai entre les tirs est respecté
                     const currentTime = Date.now() / 1000; // Temps actuel en secondes
-                    if (currentTime - lastShotTime >= timeBetweenShots) {
+                    if (currentTime - lastShotTime >= timeBetweenShots) 
+                    {
                         lastShotTime = currentTime; // Mettre à jour le dernier moment de tir
                         const projectile = 
                         {
@@ -306,14 +314,8 @@
                 const prevY = player.y;
 
                 // Déplacement horizontal du personnage
-                if (keys["ArrowLeft"]) 
-                {
-                    player.x -= player.speed;
-                }
-                if (keys["ArrowRight"]) 
-                {
-                    player.x += player.speed;
-                }
+                if (keys["ArrowLeft"]) { player.x -= player.speed; }
+                if (keys["ArrowRight"]) { player.x += player.speed; }
 
                 // Mettre à jour la position totale du joueur avec le scrollOffset
                 playerTotalX = player.x - scrollOffset;
@@ -457,6 +459,39 @@
                         playerSpriteIndex++;
                     } else {
                         playerSpriteIndex = 0;
+                    }
+                }
+
+                // Parcours de tous les projectiles
+                for (let i = 0; i < projectiles.length; i++) 
+                {
+                    const projectile = projectiles[i];
+
+                    // Vérifier la collision entre le projectile et le joueur
+                    if (
+                        projectile.x + projectile.radius >= player.x && // Collision à droite du joueur
+                        projectile.x - projectile.radius <= player.x + player.width && // Collision à gauche du joueur
+                        projectile.y + projectile.radius >= player.y && // Collision en bas du joueur
+                        projectile.y - projectile.radius <= player.y + player.height // Collision en haut du joueur
+                    ) 
+                    {
+                        // Le joueur a été touché par un projectile
+                        projectiles.splice(i, 1); // Supprimer le projectile
+
+                        // Réduire les points de vie du joueur
+                        player.health--;
+
+                        // Vérifier si le joueur n'a plus de points de vie
+                        if (player.health <= 0) 
+                        {
+                            // Le joueur est vaincu (game over)
+                            alert("Game Over! You ran out of health.");
+                            // Réinitialiser le jeu
+                            player.health = 3;
+                            player.x = 550; // Réinitialiser la position du joueur
+                            scrollOffset = Math.max(0, player.x - canvas.width / 2); // Réinitialiser le défilement
+                            return; // Arrêter la mise à jour du jeu
+                        }
                     }
                 }
 
