@@ -11,8 +11,6 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
                 object-fit: cover;
             }
             body
@@ -73,12 +71,28 @@
                 bottom: 10px;
                 right: 10px;
             }
+
+            #startButton 
+            {
+                position: absolute;
+                top: 10%;
+                left: 10%;
+                transform: translate(-50%, -50%);
+                padding: 10px 20px;
+                font-size: 20px;
+                background-color: #3498db;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+
         </style>
     </head>
 
     <body>
 
         <canvas id="gameCanvas" width="700" height="350"></canvas>
+        <button id="startButton">Start Game</button>
 
         <div>
             <div class="control-button" id="left-button">◀</div>
@@ -505,6 +519,21 @@
                 // Appel récursif pour mettre à jour en temps réel
                 requestAnimationFrame(update);
             }
+
+            // Récupération du bouton "Start Game"
+            const startButton = document.getElementById("startButton");
+
+            // Fonction pour démarrer le jeu en mode plein écran
+            function startGameFullscreen() 
+            {
+                document.documentElement.requestFullscreen();
+                startButton.style.display = "none";
+                // Ici, vous pouvez ajouter le code pour initialiser et démarrer le jeu
+                // Par exemple, l'appel à la fonction update() ou tout autre code de démarrage du jeu.
+            }
+
+            // Ajout d'un gestionnaire d'événements au clic sur le bouton
+            startButton.addEventListener("click", startGameFullscreen);
 
             // Démarrer le jeu
             playerSprites.idleRight[0].onload = function () 

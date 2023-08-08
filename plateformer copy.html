@@ -8,19 +8,25 @@
             #gameCanvas 
             {
                 border: 1px solid black;
-            }
-            html
-            {
-                text-align: center;
-                max-width: 800px;
-                max-height: 400px;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
             }
             body
             {
-                text-align: center;
-                max-width: 800px;
-                max-height: 400px;
-                position: relative;
+                overflow: hidden;
+            }
+            /* Cacher la barre d'adresse de Safari sur iOS */
+            @media (max-aspect-ratio: 13/9) 
+            {
+                body 
+                {
+                    min-height: 100vh;
+                    min-height: -webkit-fill-available;
+                }
             }
             .control-button 
             {
@@ -34,6 +40,8 @@
                 justify-content: center; /* Centrer horizontalement */
                 align-items: center; /* Centrer verticalement */
                 transition: transform 0.2s;
+                user-select: none;
+                -webkit-user-select: none;
             }
             .control-button.pressed 
             {
@@ -70,7 +78,7 @@
 
     <body>
 
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <canvas id="gameCanvas" width="700" height="350"></canvas>
 
         <div>
             <div class="control-button" id="left-button">◀</div>
