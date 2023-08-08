@@ -8,10 +8,15 @@
             #gameCanvas 
             {
                 border: 1px solid black;
+                background-color: white;
                 position: absolute;
                 top: 0;
                 left: 0;
                 object-fit: cover;
+            }
+            html
+            {
+                text-align: center;
             }
             body
             {
@@ -92,7 +97,7 @@
     <body>
 
         <canvas id="gameCanvas" width="700" height="350"></canvas>
-        <button id="startButton">Start Game</button>
+        <button id="startButton"> Full Screen </button>
 
         <div>
             <div class="control-button" id="left-button">◀</div>
@@ -526,10 +531,21 @@
             // Fonction pour démarrer le jeu en mode plein écran
             function startGameFullscreen() 
             {
-                document.documentElement.requestFullscreen();
+                const canvas = document.getElementById("gameCanvas");
+                
+                // Essayer d'activer le mode plein écran sur Safari
+                if (canvas.requestFullscreen) {
+                    canvas.requestFullscreen();
+                } else if (canvas.mozRequestFullScreen) { // Pour Firefox
+                    canvas.mozRequestFullScreen();
+                } else if (canvas.webkitRequestFullscreen) { // Pour Safari (ancienne version)
+                    canvas.webkitRequestFullscreen();
+                } else if (canvas.msRequestFullscreen) { // Pour Internet Explorer / Edge
+                    canvas.msRequestFullscreen();
+                }
+
+                // Cacher le bouton "Start Game"
                 startButton.style.display = "none";
-                // Ici, vous pouvez ajouter le code pour initialiser et démarrer le jeu
-                // Par exemple, l'appel à la fonction update() ou tout autre code de démarrage du jeu.
             }
 
             // Ajout d'un gestionnaire d'événements au clic sur le bouton
