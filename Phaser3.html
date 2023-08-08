@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Jeu de plateforme en temps réel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+</head>
+<body>
+
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 700,
+        height: 350,
+        parent: 'gameCanvas',
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 500 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    const game = new Phaser.Game(config);
+
+    let player;
+    let platforms;
+    let cursors;
+    let spaceKey;
+
+    function preload() {
+        // Charger les sprites du joueur et des projectiles
+        this.load.spritesheet('player', 'player_idle_1.png', { frameWidth: 57, frameHeight: 65 });
+        this.load.image('projectile', 'Mushroom_2.png');
+        this.load.image('platform', '2.png'); // Chargement de l'image pour les plateformes
+    }
+
+    function create() {
+        // Ajouter les plateformes
+        platforms = this.physics.add.staticGroup();
+        platforms.create(350, 340, 'platform').setScale(7, 1).refreshBody();
+
+        // Ajouter le joueur et les projectiles
+        player = this.physics.add.sprite(100, 300, 'player');
+        player.setCollideWorldBounds(true);
+        player.setBounce(0.2);
+        player.setGravityY(500); // Ajuster la gravité
+
+        this.anims.create({
+            key: 'idle',
+            frames: this.anims.generateFrameNumbers('player', { start: 0, end: 5 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        // Gestion des entrées clavier
+        cursors = this.input.keyboard.createCursorKeys();
+        spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        this.physics.add.collider(player, platforms);
+    }
+
+    function update() {
+        // Gérer les mouvements du joueur
+        if (cursors.left.isDown) {
+            player.setVelocityX(-160);
+            player.anims.play('left', true);
+        } else if (cursors.right.isDown) {
+            player.setVelocityX(160);
+            player.anims.play('right', true);
+        } else {
+            player.setVelocityX(0);
+            player.anims.play('idle', true);
+        }
+
+        if (cursors.up.isDown && player.body.touching.down) {
+            player.setVelocityY(-330);
+        }
+
+        // Gérer les tirs du joueur
+        if (spaceKey.isDown) {
+            shootProjectile();
+        }
+    }
+
+    function shootProjectile() {
+        // Créer un projectile
+        const projectile = this.physics.add.sprite(player.x, player.y, 'projectile');
+        projectile.setVelocityX(400);
+        this.physics.add.collider(projectile, platforms, () => {
+            projectile.destroy();
+        });
+    }
+</script>
+
+</body>
+</html>

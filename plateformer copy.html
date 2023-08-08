@@ -2,18 +2,21 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <title> Jeu de plateforme en temps réel </title>
         <style>
             #gameCanvas 
             {
                 border: 1px solid black;
+                background-color: white;
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
                 object-fit: cover;
+            }
+            html
+            {
+                text-align: center;
             }
             body
             {
@@ -73,12 +76,28 @@
                 bottom: 10px;
                 right: 10px;
             }
+
+            #startButton 
+            {
+                position: absolute;
+                top: 10%;
+                left: 10%;
+                transform: translate(-50%, -50%);
+                padding: 10px 20px;
+                font-size: 20px;
+                background-color: #3498db;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+
         </style>
     </head>
 
     <body>
 
         <canvas id="gameCanvas" width="700" height="350"></canvas>
+        <button id="startButton"> Full Screen </button>
 
         <div>
             <div class="control-button" id="left-button">◀</div>
@@ -109,11 +128,18 @@
             let jumpButtonPressed = false;
             let shootButtonPressed = false;
 
+            // Variables pour gérer les états de contrôle tactiles
+            let leftButtonTouched = false;
+            let rightButtonTouched = false;
+            let jumpButtonTouched = false;
+            let shootButtonTouched = false;
+
             // Récupération des boutons de contrôle du DOM
             const leftButton = document.getElementById("left-button");
             const rightButton = document.getElementById("right-button");
             const jumpButton = document.getElementById("jump-button");
             const shootButton = document.getElementById("shoot-button");
+
 
             // Gestion des événements de clic pour les boutons de contrôle
             leftButton.addEventListener("touchstart", () => { leftButtonPressed = true; leftButton.classList.add("pressed"); });
@@ -125,15 +151,27 @@
             shootButton.addEventListener("touchstart", () => { shootButtonPressed = true; shootButton.classList.add("pressed"); });
             shootButton.addEventListener("touchend", () => { shootButtonPressed = false; shootButton.classList.remove("pressed"); });
 
+            // Gestion des événements tactiles pour les boutons de contrôle
+            leftButton.addEventListener("touchstart", () => { leftButtonTouched = true; leftButton.classList.add("pressed"); });
+            leftButton.addEventListener("touchend", () => { leftButtonTouched = false; leftButton.classList.remove("pressed"); });
+            rightButton.addEventListener("touchstart", () => { rightButtonTouched = true; rightButton.classList.add("pressed"); });
+            rightButton.addEventListener("touchend", () => { rightButtonTouched = false; rightButton.classList.remove("pressed"); });
+            jumpButton.addEventListener("touchstart", () => { jumpButtonTouched = true; jumpButton.classList.add("pressed"); });
+            jumpButton.addEventListener("touchend", () => { jumpButtonTouched = false; jumpButton.classList.remove("pressed"); });
+            shootButton.addEventListener("touchstart", () => { shootButtonTouched = true; shootButton.classList.add("pressed"); });
+            shootButton.addEventListener("touchend", () => { shootButtonTouched = false; shootButton.classList.remove("pressed"); });
+
             // Fonction pour gérer les mouvements du personnage en fonction des états des boutons ( mobile )
             function handleCharacterMovement() 
             {
                 // Déplacement vers la gauche
-                if (leftButtonPressed) { player.x -= player.speed; player.direction = "left"; }
+                if ((leftButtonPressed || leftButtonTouched) && !(rightButtonPressed || rightButtonTouched)) { player.x -= player.speed; player.direction = "left"; }
                 // Déplacement vers la droite
-                if (rightButtonPressed) { player.x += player.speed; player.direction = "right"; }
+                if ((rightButtonPressed || rightButtonTouched) && !(leftButtonPressed || leftButtonTouched)) { player.x += player.speed; player.direction = "right"; }
                 // Saut du personnage
-                if (jumpButtonPressed && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
+                if ((jumpButtonPressed || jumpButtonTouched) && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
+                // Gérer les tirs du personnage
+                handleShooting();   
             }
             
             // Initialisation du canvas et du contexte 2D
@@ -342,11 +380,19 @@
                 const prevX = player.x;
                 const prevY = player.y;
 
-                // Déplacement horizontal du personnage
-                if (keys["ArrowLeft"]) 
-                { player.x -= player.speed; }
-                if (keys["ArrowRight"]) 
-                { player.x += player.speed; }
+                // Déplacement horizontal du personnage en fonction des états des boutons tactiles
+                if ((keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched) &&
+                    !(keys["ArrowRight"] || rightButtonPressed || rightButtonTouched)) 
+                {
+                    player.x -= player.speed;
+                    player.direction = "left";
+                }
+                if ((keys["ArrowRight"] || rightButtonPressed || rightButtonTouched) &&
+                    !(keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched)) 
+                {
+                    player.x += player.speed;
+                    player.direction = "right";
+                }
 
                 // Mettre à jour la position totale du joueur avec le scrollOffset
                 playerTotalX = player.x - scrollOffset;
@@ -505,6 +551,32 @@
                 // Appel récursif pour mettre à jour en temps réel
                 requestAnimationFrame(update);
             }
+
+            // Récupération du bouton "Start Game"
+            const startButton = document.getElementById("startButton");
+
+            // Fonction pour démarrer le jeu en mode plein écran
+            function startGameFullscreen() 
+            {
+                const canvas = document.getElementById("gameCanvas");
+                
+                // Essayer d'activer le mode plein écran sur Safari
+                if (canvas.requestFullscreen) {
+                    canvas.requestFullscreen();
+                } else if (canvas.mozRequestFullScreen) { // Pour Firefox
+                    canvas.mozRequestFullScreen();
+                } else if (canvas.webkitRequestFullscreen) { // Pour Safari (ancienne version)
+                    canvas.webkitRequestFullscreen();
+                } else if (canvas.msRequestFullscreen) { // Pour Internet Explorer / Edge
+                    canvas.msRequestFullscreen();
+                }
+
+                // Cacher le bouton "Start Game"
+                startButton.style.display = "none";
+            }
+
+            // Ajout d'un gestionnaire d'événements au clic sur le bouton
+            startButton.addEventListener("click", startGameFullscreen);
 
             // Démarrer le jeu
             playerSprites.idleRight[0].onload = function () 

@@ -1,0 +1,14 @@
+Je veux faire un jeu de plateformes avec le framework Phaser 3. 
+Ecris moi le code qui me donnera le jeu suivant : 
+1. Un niveau de 750 x 350 px 
+2. Un mur à gauche et un mur à droite
+3. Un sol 
+4. Un Personnage pour le joueur avec des sprites pour les animations :
+    - sprite du personnage lorsqu'il ne bouge pas
+    - sprites de déplacement à droite et sprites de déplacement à gauche ( 6 sprites x 2)
+    - sprites de saut à droite et sprites de saut à gauche ( 3 sprites x 2)
+    - sprite de tir lorsque le personnage ne bouge pas ( 1 sprite vers la gauche et 1 sprite vers la droite )
+5. Une fonctionnalité de tir de projectiles ronds pour le joueur avec la barre espace
+6. Une fonctionnalité de déplacement vers la gauche, la droite et en haut en sautant
+7. Des collisions entre le personnage, les murs, le sol, les plateformes et les projectiles
+8. Des plateformes
