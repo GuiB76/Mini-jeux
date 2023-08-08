@@ -128,11 +128,18 @@
             let jumpButtonPressed = false;
             let shootButtonPressed = false;
 
+            // Variables pour gérer les états de contrôle tactiles
+            let leftButtonTouched = false;
+            let rightButtonTouched = false;
+            let jumpButtonTouched = false;
+            let shootButtonTouched = false;
+
             // Récupération des boutons de contrôle du DOM
             const leftButton = document.getElementById("left-button");
             const rightButton = document.getElementById("right-button");
             const jumpButton = document.getElementById("jump-button");
             const shootButton = document.getElementById("shoot-button");
+
 
             // Gestion des événements de clic pour les boutons de contrôle
             leftButton.addEventListener("touchstart", () => { leftButtonPressed = true; leftButton.classList.add("pressed"); });
@@ -144,15 +151,27 @@
             shootButton.addEventListener("touchstart", () => { shootButtonPressed = true; shootButton.classList.add("pressed"); });
             shootButton.addEventListener("touchend", () => { shootButtonPressed = false; shootButton.classList.remove("pressed"); });
 
+            // Gestion des événements tactiles pour les boutons de contrôle
+            leftButton.addEventListener("touchstart", () => { leftButtonTouched = true; leftButton.classList.add("pressed"); });
+            leftButton.addEventListener("touchend", () => { leftButtonTouched = false; leftButton.classList.remove("pressed"); });
+            rightButton.addEventListener("touchstart", () => { rightButtonTouched = true; rightButton.classList.add("pressed"); });
+            rightButton.addEventListener("touchend", () => { rightButtonTouched = false; rightButton.classList.remove("pressed"); });
+            jumpButton.addEventListener("touchstart", () => { jumpButtonTouched = true; jumpButton.classList.add("pressed"); });
+            jumpButton.addEventListener("touchend", () => { jumpButtonTouched = false; jumpButton.classList.remove("pressed"); });
+            shootButton.addEventListener("touchstart", () => { shootButtonTouched = true; shootButton.classList.add("pressed"); });
+            shootButton.addEventListener("touchend", () => { shootButtonTouched = false; shootButton.classList.remove("pressed"); });
+
             // Fonction pour gérer les mouvements du personnage en fonction des états des boutons ( mobile )
             function handleCharacterMovement() 
             {
                 // Déplacement vers la gauche
-                if (leftButtonPressed) { player.x -= player.speed; player.direction = "left"; }
+                if ((leftButtonPressed || leftButtonTouched) && !(rightButtonPressed || rightButtonTouched)) { player.x -= player.speed; player.direction = "left"; }
                 // Déplacement vers la droite
-                if (rightButtonPressed) { player.x += player.speed; player.direction = "right"; }
+                if ((rightButtonPressed || rightButtonTouched) && !(leftButtonPressed || leftButtonTouched)) { player.x += player.speed; player.direction = "right"; }
                 // Saut du personnage
-                if (jumpButtonPressed && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
+                if ((jumpButtonPressed || jumpButtonTouched) && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
+                // Gérer les tirs du personnage
+                handleShooting();   
             }
             
             // Initialisation du canvas et du contexte 2D
@@ -361,11 +380,19 @@
                 const prevX = player.x;
                 const prevY = player.y;
 
-                // Déplacement horizontal du personnage
-                if (keys["ArrowLeft"]) 
-                { player.x -= player.speed; }
-                if (keys["ArrowRight"]) 
-                { player.x += player.speed; }
+                // Déplacement horizontal du personnage en fonction des états des boutons tactiles
+                if ((keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched) &&
+                    !(keys["ArrowRight"] || rightButtonPressed || rightButtonTouched)) 
+                {
+                    player.x -= player.speed;
+                    player.direction = "left";
+                }
+                if ((keys["ArrowRight"] || rightButtonPressed || rightButtonTouched) &&
+                    !(keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched)) 
+                {
+                    player.x += player.speed;
+                    player.direction = "right";
+                }
 
                 // Mettre à jour la position totale du joueur avec le scrollOffset
                 playerTotalX = player.x - scrollOffset;
