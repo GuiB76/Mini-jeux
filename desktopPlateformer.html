@@ -22,179 +22,15 @@
             {
                 overflow: hidden;
             }
-            /* Cacher la barre d'adresse de Safari sur iOS */
-            @media (max-aspect-ratio: 13/9) 
-            {
-                body 
-                {
-                    min-height: 100vh;
-                    min-height: -webkit-fill-available;
-                }
-            }
-            .control-button 
-            {
-                width: 50px;
-                height: 50px;
-                margin: 5px;
-                font-size: 20px;
-                cursor: pointer;
-                border: 2px solid black;
-                display: flex; /* Utiliser flexbox pour centrer le contenu */
-                justify-content: center; /* Centrer horizontalement */
-                align-items: center; /* Centrer verticalement */
-                transition: transform 0.2s;
-                user-select: none;
-                -webkit-user-select: none;
-            }
-            .control-button.pressed 
-            {
-                transform: scale(1.1); /* Grossissement du bouton lorsqu'il est appuyé */
-            }
-            #left-button, #jump-button, #right-button {
-            position: absolute; /* Positionner les boutons */
-            bottom: 10px;
-            }
-            #left-button 
-            {
-                left: 10px;
-            }
-            #jump-button 
-            {
-                left: 9%; /* Centrer le bouton de saut horizontalement */
-                transform: translateX(-50%);
-                bottom: 65px;
-            }
-            #right-button 
-            {
-                left: 10%;
-            }
-            #shoot-button 
-            {
-                width: 70px;
-                height: 70px;
-                position: absolute; /* Positionner le bouton de tir en bas à droite */
-                bottom: 10px;
-                right: 10px;
-            }
-
-            #startButton 
-            {
-                position: absolute;
-                top: 10%;
-                left: 10%;
-                transform: translate(-50%, -50%);
-                padding: 10px 20px;
-                font-size: 20px;
-                background-color: #3498db;
-                color: white;
-                border: none;
-                cursor: pointer;
-            }
-
-            #joystick-container 
-            {
-                position: absolute;
-                bottom: 10px;
-                left: 50px;
-                width: 100px;
-                height: 100px;
-                background-color: rgba(0, 0, 0, 0.5);
-                border-radius: 50%;
-                touch-action: none;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            #joystick-handle 
-            {
-                width: 50px;
-                height: 50px;
-                background-color: rgba(255, 255, 255, 0.7);
-                border-radius: 50%;
-            }
 
         </style>
     </head>
 
     <body>
 
-        <canvas id="gameCanvas" width="700" height="350"></canvas>
-        <button id="startButton"> Full Screen </button>
-        <div id="joystick-container">
-            <div id="joystick-handle"></div>
-        </div>
-
-        <div>
-            <div class="control-button" id="left-button">◀</div>
-            <div class="control-button" id="jump-button">▲</div>
-            <div class="control-button" id="right-button">▶</div>
-        </div>
-        <div class="control-button" id="shoot-button">SHOOT</div>
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
 
         <script>
-
-            const joystickContainer = document.getElementById("joystick-container");
-            const joystickHandle = document.getElementById("joystick-handle");
-
-            let joystickTouchId = null;
-            let joystickStartX = 0;
-            let joystickStartY = 0;
-            let joystickOffsetX = 0;
-            let joystickOffsetY = 0;
-
-            // Gestion de l'événement de toucher pour commencer le mouvement du joystick
-            joystickContainer.addEventListener("touchstart", (event) => 
-            {
-                if (joystickTouchId === null) 
-                {
-                    const touch = event.changedTouches[0];
-                    joystickTouchId = touch.identifier;
-                    joystickStartX = touch.clientX;
-                    joystickStartY = touch.clientY;
-                    joystickOffsetX = 0;
-                    joystickOffsetY = 0;
-                }
-            });
-
-            // Gestion de l'événement de toucher pour mettre à jour le mouvement du joystick
-            joystickContainer.addEventListener("touchmove", (event) => 
-            {
-                const touch = Array.from(event.changedTouches).find((t) => t.identifier === joystickTouchId);
-                if (touch) 
-                {
-                    joystickOffsetX = touch.clientX - joystickStartX;
-                    joystickOffsetY = touch.clientY - joystickStartY;
-                    const distance = Math.sqrt(joystickOffsetX ** 2 + joystickOffsetY ** 2);
-                    if (distance > joystickContainer.clientWidth / 2) 
-                    {
-                        const angle = Math.atan2(joystickOffsetY, joystickOffsetX);
-                        joystickOffsetX = Math.cos(angle) * joystickContainer.clientWidth / 2;
-                        joystickOffsetY = Math.sin(angle) * joystickContainer.clientWidth / 2;
-                    }
-                }
-            });
-
-            // Gestion de l'événement de toucher pour arrêter le mouvement du joystick
-            joystickContainer.addEventListener("touchend", (event) => 
-            {
-                const touch = Array.from(event.changedTouches).find((t) => t.identifier === joystickTouchId);
-                if (touch) 
-                {
-                    joystickTouchId = null;
-                    joystickOffsetX = 0;
-                    joystickOffsetY = 0;
-                }
-            });
-
-            // Fonction pour obtenir les valeurs normalisées du joystick
-            function getJoystickValues() 
-            {
-                const maxOffset = joystickContainer.clientWidth / 2;
-                const normalizedX = joystickOffsetX / maxOffset;
-                const normalizedY = joystickOffsetY / maxOffset;
-                return { x: normalizedX, y: normalizedY };
-            }
 
             // JOUEUR
             const player = 
@@ -203,71 +39,24 @@
                 y: 50,
                 width: 30,
                 height: 45,
-                speed: 3,
+                speed: 1.5,
                 jumping: false,
                 jumpPower: 10,
                 velocityY: 1,
                 direction: "right", // Ajouter la direction du personnage
             };
 
-            // Variables pour gérer les états de contrôle
-            let leftButtonPressed = false;
-            let rightButtonPressed = false;
-            let jumpButtonPressed = false;
-            let shootButtonPressed = false;
-
-            // Variables pour gérer les états de contrôle tactiles
-            let leftButtonTouched = false;
-            let rightButtonTouched = false;
-            let jumpButtonTouched = false;
-            let shootButtonTouched = false;
-
-            // Récupération des boutons de contrôle du DOM
-            const leftButton = document.getElementById("left-button");
-            const rightButton = document.getElementById("right-button");
-            const jumpButton = document.getElementById("jump-button");
-            const shootButton = document.getElementById("shoot-button");
-
-
-            // Gestion des événements de clic pour les boutons de contrôle
-            leftButton.addEventListener("touchstart", () => { leftButtonPressed = true; leftButton.classList.add("pressed"); });
-            leftButton.addEventListener("touchend", () => { leftButtonPressed = false; leftButton.classList.remove("pressed"); });
-            rightButton.addEventListener("touchstart", () => { rightButtonPressed = true; rightButton.classList.add("pressed"); });
-            rightButton.addEventListener("touchend", () => { rightButtonPressed = false; rightButton.classList.remove("pressed"); });
-            jumpButton.addEventListener("touchstart", () => { jumpButtonPressed = true; jumpButton.classList.add("pressed"); });
-            jumpButton.addEventListener("touchend", () =>  { jumpButtonPressed = false; jumpButton.classList.remove("pressed"); });
-            shootButton.addEventListener("touchstart", () => { shootButtonPressed = true; shootButton.classList.add("pressed"); });
-            shootButton.addEventListener("touchend", () => { shootButtonPressed = false; shootButton.classList.remove("pressed"); });
-
-            // Gestion des événements tactiles pour les boutons de contrôle
-            leftButton.addEventListener("touchstart", () => { leftButtonTouched = true; leftButton.classList.add("pressed"); });
-            leftButton.addEventListener("touchend", () => { leftButtonTouched = false; leftButton.classList.remove("pressed"); });
-            rightButton.addEventListener("touchstart", () => { rightButtonTouched = true; rightButton.classList.add("pressed"); });
-            rightButton.addEventListener("touchend", () => { rightButtonTouched = false; rightButton.classList.remove("pressed"); });
-            jumpButton.addEventListener("touchstart", () => { jumpButtonTouched = true; jumpButton.classList.add("pressed"); });
-            jumpButton.addEventListener("touchend", () => { jumpButtonTouched = false; jumpButton.classList.remove("pressed"); });
-            shootButton.addEventListener("touchstart", () => { shootButtonTouched = true; shootButton.classList.add("pressed"); });
-            shootButton.addEventListener("touchend", () => { shootButtonTouched = false; shootButton.classList.remove("pressed"); });
-
             // Fonction pour gérer les mouvements du personnage en fonction des états des boutons ( mobile )
             function handleCharacterMovement() 
             {
                 // Déplacement vers la gauche
-                if ((leftButtonPressed || leftButtonTouched) && !(rightButtonPressed || rightButtonTouched)) { player.x -= player.speed; player.direction = "left"; }
+                if (keys["ArrowLeft"] && !keys["ArrowRight"]) { player.x -= player.speed; player.direction = "left"; }
                 // Déplacement vers la droite
-                if ((rightButtonPressed || rightButtonTouched) && !(leftButtonPressed || leftButtonTouched)) { player.x += player.speed; player.direction = "right"; }
+                if (keys["ArrowRight"] && !keys["ArrowLeft"]) { player.x += player.speed; player.direction = "right"; }
                 // Saut du personnage
-                if ((jumpButtonPressed || jumpButtonTouched) && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
+                if (keys["ArrowUp"] && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
                 // Gérer les tirs du personnage
-                handleShooting();
-                // JOYSTICK
-                const joystickValues = getJoystickValues();
-                // Déplacement vers la gauche
-                if (joystickValues.x < -0.5) { player.x -= player.speed; player.direction = "left"; }
-                // Déplacement vers la droite
-                if (joystickValues.x > 0.5) { player.x += player.speed; player.direction = "right"; }
-                // Saut du personnage
-                if (joystickValues.y > 0.5) { player.jumping = true; player.velocityY = -player.jumpPower; }   
+                handleShooting(); 
             }
             
             // Initialisation du canvas et du contexte 2D
@@ -302,12 +91,12 @@
                 { x: 0, y: canvas.height - 10, width: levelWidth, height: 10, imageSrc: "plateforme-test.png" }, // Plateforme au sol
                 { x: 0, y: 0, width: 400, height: canvas.height }, // Mur de gauche
                 { x: 3600, y: 0, width: 400, height: canvas.height }, // Mur de droite
-                { x: 500, y: 300, width: 100, height: 50, imageSrc: "plateforme-test.png" }, 
-                { x: 600, y: 250, width: 100, height: 50, imageSrc: "plateforme-test.png" }, 
-                { x: 700, y: 150, width: 100, height: 50, imageSrc: "plateforme-test.png" },
-                { x: 800, y: 250, width: 100, height: 50, imageSrc: "plateforme-test.png" },
-                { x: 950, y: 250, width: 100, height: 50, imageSrc: "plateforme-test.png" },
-                { x: 1020, y: 200, width: 100, height: 50, imageSrc: "plateforme-test.png" }
+                { x: 500, y: 750, width: 100, height: 50, imageSrc: "plateforme-test.png" }, 
+                { x: 600, y: 700, width: 100, height: 50, imageSrc: "plateforme-test.png" }, 
+                { x: 700, y: 650, width: 100, height: 50, imageSrc: "plateforme-test.png" },
+                { x: 800, y: 600, width: 100, height: 50, imageSrc: "plateforme-test.png" },
+                { x: 950, y: 550, width: 100, height: 50, imageSrc: "plateforme-test.png" },
+                { x: 1020, y: 500, width: 100, height: 50, imageSrc: "plateforme-test.png" }
             ];
 
             // Projectiles (boules rouges)
@@ -330,11 +119,11 @@
             function handleKeyPress() 
             {
                 // Mettre à jour la direction du personnage en fonction des touches enfoncées
-                if (keys["ArrowLeft"] || leftButtonPressed === true) 
+                if (keys["ArrowLeft"]) 
                 {
                     player.direction = "left";
                 } 
-                else if (keys["ArrowRight"] || rightButtonPressed === true) 
+                else if (keys["ArrowRight"]) 
                 {
                     player.direction = "right";
                 }
@@ -389,12 +178,12 @@
             function drawPlayer() 
             {
                 let playerImage;
-                let isMoving = keys["ArrowLeft"] || keys["ArrowRight"] || leftButtonPressed === true || rightButtonPressed === true ;
-                if (player.jumping || jumpButtonPressed === true) 
+                let isMoving = keys["ArrowLeft"] || keys["ArrowRight"];
+                if (player.jumping) 
                 { playerImage = player.direction === "right" ? playerSprites.jumpRight[playerSpriteIndex] : playerSprites.jumpLeft[playerSpriteIndex]; } 
                 else if (isMoving) 
                 { playerImage = player.direction === "right" ? playerSprites.walkRight[playerSpriteIndex] : playerSprites.walkLeft[playerSpriteIndex]; }
-                else if (keys[" "] || shootButtonPressed === true) 
+                else if (keys[" "]) 
                 { playerImage = player.direction === "right" ? playerSprites.jumpRight[0] : playerSprites.jumpLeft[0]; } 
                 else 
                 { playerImage = player.direction === "right" ? playerSprites.idleRight[playerSpriteIndex] : playerSprites.idleLeft[playerSpriteIndex]; }
@@ -417,7 +206,7 @@
             function handleShooting() 
             {
                 // Vérifier si la touche de tir est enfoncée
-                if ((keys[" "] || shootButtonPressed) && !spaceKeyPressed) 
+                if (keys[" "] && !spaceKeyPressed)
                 {
                     spaceKeyPressed = true;
                     // Vérifier le délai entre les tirs
@@ -429,14 +218,14 @@
                         {
                             x: player.x + (player.direction === "right" ? player.width : 0),
                             y: player.y + player.height / 2.7,
-                            radius: 4,
+                            radius: 2,
                             speed: 8,
                             direction: player.direction,
                         };
                         projectiles.push(newProjectile);
                     }
                 } 
-                else if (!keys[" "] && !shootButtonPressed) 
+                else if (!keys[" "]) 
                 {
                     spaceKeyPressed = false;
                 }
@@ -490,14 +279,12 @@
                 const prevY = player.y;
 
                 // Déplacement horizontal du personnage en fonction des états des boutons tactiles
-                if ((keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched) &&
-                    !(keys["ArrowRight"] || rightButtonPressed || rightButtonTouched)) 
+                if (keys["ArrowLeft"] && !keys["ArrowRight"] )
                 {
                     player.x -= player.speed;
                     player.direction = "left";
                 }
-                if ((keys["ArrowRight"] || rightButtonPressed || rightButtonTouched) &&
-                    !(keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched)) 
+                if (keys["ArrowRight"] && !keys["ArrowLeft"] )
                 {
                     player.x += player.speed;
                     player.direction = "right";
@@ -506,32 +293,8 @@
                 // Mettre à jour la position totale du joueur avec le scrollOffset
                 playerTotalX = player.x - scrollOffset;
 
-                // Ne pas supprimer les projectiles lorsque leur position x dépasse les limites du niveau
-                projectiles.forEach((projectile, index) => 
-                {
-                    if (projectile.x < playerTotalX || projectile.x > playerTotalX + levelWidth) 
-                    { projectiles.splice(index, 1); }
-                });
-
-                // Ne pas supprimer les projectiles lorsque leur position x dépasse les limites du canvas
-                const levelStartX = scrollOffset;
-                const levelEndX = scrollOffset + canvas.width;
-                const projectilesWithinLevel = projectiles.filter
-                (
-                    (projectile) => projectile.x >= levelStartX && projectile.x <= levelEndX
-                );
-                projectiles.length = 0;
-                projectiles.push(...projectilesWithinLevel);
-
                 // Saut du personnage
                 if (keys["ArrowUp"] && !player.jumping) 
-                {
-                    player.jumping = true;
-                    player.velocityY = -player.jumpPower;
-                    upKeyPressed = true; // La touche "Flèche du haut" est enfoncée lors du saut
-                }
-                // Saut du personnage sur mobile
-                if ((keys["ArrowUp"] || jumpButtonPressed) && !player.jumping) 
                 {
                     player.jumping = true;
                     player.velocityY = -player.jumpPower;
@@ -669,32 +432,6 @@
                 // Appel récursif pour mettre à jour en temps réel
                 requestAnimationFrame(update);
             }
-
-            // Récupération du bouton "Start Game"
-            const startButton = document.getElementById("startButton");
-
-            // Fonction pour démarrer le jeu en mode plein écran
-            function startGameFullscreen() 
-            {
-                const canvas = document.getElementById("gameCanvas");
-                
-                // Essayer d'activer le mode plein écran sur Safari
-                if (canvas.requestFullscreen) {
-                    canvas.requestFullscreen();
-                } else if (canvas.mozRequestFullScreen) { // Pour Firefox
-                    canvas.mozRequestFullScreen();
-                } else if (canvas.webkitRequestFullscreen) { // Pour Safari (ancienne version)
-                    canvas.webkitRequestFullscreen();
-                } else if (canvas.msRequestFullscreen) { // Pour Internet Explorer / Edge
-                    canvas.msRequestFullscreen();
-                }
-
-                // Cacher le bouton "Start Game"
-                startButton.style.display = "none";
-            }
-
-            // Ajout d'un gestionnaire d'événements au clic sur le bouton
-            startButton.addEventListener("click", startGameFullscreen);
 
             // Démarrer le jeu
             playerSprites.idleRight[0].onload = function () 

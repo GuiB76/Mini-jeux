@@ -8,10 +8,15 @@
             #gameCanvas 
             {
                 border: 1px solid black;
+                background-color: white;
                 position: absolute;
                 top: 0;
                 left: 0;
                 object-fit: cover;
+            }
+            html
+            {
+                text-align: center;
             }
             body
             {
@@ -86,13 +91,39 @@
                 cursor: pointer;
             }
 
+            #joystick-container 
+            {
+                position: absolute;
+                bottom: 10px;
+                left: 50px;
+                width: 100px;
+                height: 100px;
+                background-color: rgba(0, 0, 0, 0.5);
+                border-radius: 50%;
+                touch-action: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #joystick-handle 
+            {
+                width: 50px;
+                height: 50px;
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 50%;
+            }
+
         </style>
     </head>
 
     <body>
 
         <canvas id="gameCanvas" width="700" height="350"></canvas>
-        <button id="startButton">Start Game</button>
+        <button id="startButton"> Full Screen </button>
+        <div id="joystick-container">
+            <div id="joystick-handle"></div>
+        </div>
 
         <div>
             <div class="control-button" id="left-button">◀</div>
@@ -102,6 +133,68 @@
         <div class="control-button" id="shoot-button">SHOOT</div>
 
         <script>
+
+            const joystickContainer = document.getElementById("joystick-container");
+            const joystickHandle = document.getElementById("joystick-handle");
+
+            let joystickTouchId = null;
+            let joystickStartX = 0;
+            let joystickStartY = 0;
+            let joystickOffsetX = 0;
+            let joystickOffsetY = 0;
+
+            // Gestion de l'événement de toucher pour commencer le mouvement du joystick
+            joystickContainer.addEventListener("touchstart", (event) => 
+            {
+                if (joystickTouchId === null) 
+                {
+                    const touch = event.changedTouches[0];
+                    joystickTouchId = touch.identifier;
+                    joystickStartX = touch.clientX;
+                    joystickStartY = touch.clientY;
+                    joystickOffsetX = 0;
+                    joystickOffsetY = 0;
+                }
+            });
+
+            // Gestion de l'événement de toucher pour mettre à jour le mouvement du joystick
+            joystickContainer.addEventListener("touchmove", (event) => 
+            {
+                const touch = Array.from(event.changedTouches).find((t) => t.identifier === joystickTouchId);
+                if (touch) 
+                {
+                    joystickOffsetX = touch.clientX - joystickStartX;
+                    joystickOffsetY = touch.clientY - joystickStartY;
+                    const distance = Math.sqrt(joystickOffsetX ** 2 + joystickOffsetY ** 2);
+                    if (distance > joystickContainer.clientWidth / 2) 
+                    {
+                        const angle = Math.atan2(joystickOffsetY, joystickOffsetX);
+                        joystickOffsetX = Math.cos(angle) * joystickContainer.clientWidth / 2;
+                        joystickOffsetY = Math.sin(angle) * joystickContainer.clientWidth / 2;
+                    }
+                }
+            });
+
+            // Gestion de l'événement de toucher pour arrêter le mouvement du joystick
+            joystickContainer.addEventListener("touchend", (event) => 
+            {
+                const touch = Array.from(event.changedTouches).find((t) => t.identifier === joystickTouchId);
+                if (touch) 
+                {
+                    joystickTouchId = null;
+                    joystickOffsetX = 0;
+                    joystickOffsetY = 0;
+                }
+            });
+
+            // Fonction pour obtenir les valeurs normalisées du joystick
+            function getJoystickValues() 
+            {
+                const maxOffset = joystickContainer.clientWidth / 2;
+                const normalizedX = joystickOffsetX / maxOffset;
+                const normalizedY = joystickOffsetY / maxOffset;
+                return { x: normalizedX, y: normalizedY };
+            }
 
             // JOUEUR
             const player = 
@@ -123,11 +216,18 @@
             let jumpButtonPressed = false;
             let shootButtonPressed = false;
 
+            // Variables pour gérer les états de contrôle tactiles
+            let leftButtonTouched = false;
+            let rightButtonTouched = false;
+            let jumpButtonTouched = false;
+            let shootButtonTouched = false;
+
             // Récupération des boutons de contrôle du DOM
             const leftButton = document.getElementById("left-button");
             const rightButton = document.getElementById("right-button");
             const jumpButton = document.getElementById("jump-button");
             const shootButton = document.getElementById("shoot-button");
+
 
             // Gestion des événements de clic pour les boutons de contrôle
             leftButton.addEventListener("touchstart", () => { leftButtonPressed = true; leftButton.classList.add("pressed"); });
@@ -139,15 +239,35 @@
             shootButton.addEventListener("touchstart", () => { shootButtonPressed = true; shootButton.classList.add("pressed"); });
             shootButton.addEventListener("touchend", () => { shootButtonPressed = false; shootButton.classList.remove("pressed"); });
 
+            // Gestion des événements tactiles pour les boutons de contrôle
+            leftButton.addEventListener("touchstart", () => { leftButtonTouched = true; leftButton.classList.add("pressed"); });
+            leftButton.addEventListener("touchend", () => { leftButtonTouched = false; leftButton.classList.remove("pressed"); });
+            rightButton.addEventListener("touchstart", () => { rightButtonTouched = true; rightButton.classList.add("pressed"); });
+            rightButton.addEventListener("touchend", () => { rightButtonTouched = false; rightButton.classList.remove("pressed"); });
+            jumpButton.addEventListener("touchstart", () => { jumpButtonTouched = true; jumpButton.classList.add("pressed"); });
+            jumpButton.addEventListener("touchend", () => { jumpButtonTouched = false; jumpButton.classList.remove("pressed"); });
+            shootButton.addEventListener("touchstart", () => { shootButtonTouched = true; shootButton.classList.add("pressed"); });
+            shootButton.addEventListener("touchend", () => { shootButtonTouched = false; shootButton.classList.remove("pressed"); });
+
             // Fonction pour gérer les mouvements du personnage en fonction des états des boutons ( mobile )
             function handleCharacterMovement() 
             {
                 // Déplacement vers la gauche
-                if (leftButtonPressed) { player.x -= player.speed; player.direction = "left"; }
+                if ((leftButtonPressed || leftButtonTouched) && !(rightButtonPressed || rightButtonTouched)) { player.x -= player.speed; player.direction = "left"; }
                 // Déplacement vers la droite
-                if (rightButtonPressed) { player.x += player.speed; player.direction = "right"; }
+                if ((rightButtonPressed || rightButtonTouched) && !(leftButtonPressed || leftButtonTouched)) { player.x += player.speed; player.direction = "right"; }
                 // Saut du personnage
-                if (jumpButtonPressed && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
+                if ((jumpButtonPressed || jumpButtonTouched) && !player.jumping) { player.jumping = true; player.velocityY = -player.jumpPower;}
+                // Gérer les tirs du personnage
+                handleShooting();
+                // JOYSTICK
+                const joystickValues = getJoystickValues();
+                // Déplacement vers la gauche
+                if (joystickValues.x < -0.5) { player.x -= player.speed; player.direction = "left"; }
+                // Déplacement vers la droite
+                if (joystickValues.x > 0.5) { player.x += player.speed; player.direction = "right"; }
+                // Saut du personnage
+                if (joystickValues.y > 0.5) { player.jumping = true; player.velocityY = -player.jumpPower; }   
             }
             
             // Initialisation du canvas et du contexte 2D
@@ -179,15 +299,15 @@
             // Plateformes
             const platforms = 
             [
-                { x: 0, y: canvas.height - 10, width: levelWidth, height: 10 }, // Plateforme au sol
+                { x: 0, y: canvas.height - 10, width: levelWidth, height: 10, imageSrc: "plateforme-test.png" }, // Plateforme au sol
                 { x: 0, y: 0, width: 400, height: canvas.height }, // Mur de gauche
                 { x: 3600, y: 0, width: 400, height: canvas.height }, // Mur de droite
-                { x: 500, y: 300, width: 100, height: 10 }, // Première plateforme
-                { x: 600, y: 250, width: 100, height: 10 }, // Deuxième plateforme
-                { x: 700, y: 150, width: 100, height: 10 },
-                { x: 800, y: 250, width: 100, height: 10 },
-                { x: 950, y: 250, width: 100, height: 10 },
-                { x: 1020, y: 200, width: 100, height: 10 }
+                { x: 500, y: 300, width: 100, height: 50, imageSrc: "plateforme-test.png" }, 
+                { x: 600, y: 250, width: 100, height: 50, imageSrc: "plateforme-test.png" }, 
+                { x: 700, y: 150, width: 100, height: 50, imageSrc: "plateforme-test.png" },
+                { x: 800, y: 250, width: 100, height: 50, imageSrc: "plateforme-test.png" },
+                { x: 950, y: 250, width: 100, height: 50, imageSrc: "plateforme-test.png" },
+                { x: 1020, y: 200, width: 100, height: 50, imageSrc: "plateforme-test.png" }
             ];
 
             // Projectiles (boules rouges)
@@ -309,7 +429,7 @@
                         {
                             x: player.x + (player.direction === "right" ? player.width : 0),
                             y: player.y + player.height / 2.7,
-                            radius: 4,
+                            radius: 2,
                             speed: 8,
                             direction: player.direction,
                         };
@@ -350,17 +470,38 @@
                 }
             }
 
+            // Fonction pour charger les images des plateformes
+            function loadPlatformImages() 
+            {
+                platforms.forEach((platform) => 
+                {
+                    if (platform.imageSrc) 
+                    {
+                        platform.image = new Image();
+                        platform.image.src = platform.imageSrc;
+                    }
+                });
+            }
+
             // Fonction de mise à jour du jeu
             function update() 
             {
                 const prevX = player.x;
                 const prevY = player.y;
 
-                // Déplacement horizontal du personnage
-                if (keys["ArrowLeft"]) 
-                { player.x -= player.speed; }
-                if (keys["ArrowRight"]) 
-                { player.x += player.speed; }
+                // Déplacement horizontal du personnage en fonction des états des boutons tactiles
+                if ((keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched) &&
+                    !(keys["ArrowRight"] || rightButtonPressed || rightButtonTouched)) 
+                {
+                    player.x -= player.speed;
+                    player.direction = "left";
+                }
+                if ((keys["ArrowRight"] || rightButtonPressed || rightButtonTouched) &&
+                    !(keys["ArrowLeft"] || leftButtonPressed || leftButtonTouched)) 
+                {
+                    player.x += player.speed;
+                    player.direction = "right";
+                }
 
                 // Mettre à jour la position totale du joueur avec le scrollOffset
                 playerTotalX = player.x - scrollOffset;
@@ -443,10 +584,19 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 // Dessiner les plateformes
-                ctx.fillStyle = "gray";
                 platforms.forEach((platform) => 
                 {
-                    ctx.fillRect(platform.x - scrollOffset, platform.y, platform.width, platform.height);
+                    if (platform.image) 
+                    {
+                        // Dessiner l'image de la plateforme
+                        ctx.drawImage(platform.image, platform.x - scrollOffset, platform.y, platform.width, platform.height);
+                    } 
+                    else 
+                    {
+                        // Dessiner un rectangle si aucune image n'est définie
+                        ctx.fillStyle = "gray";
+                        ctx.fillRect(platform.x - scrollOffset, platform.y, platform.width, platform.height);
+                    }
                 });
 
                 // Dessiner les projectiles (boules noires)
@@ -526,10 +676,21 @@
             // Fonction pour démarrer le jeu en mode plein écran
             function startGameFullscreen() 
             {
-                document.documentElement.requestFullscreen();
+                const canvas = document.getElementById("gameCanvas");
+                
+                // Essayer d'activer le mode plein écran sur Safari
+                if (canvas.requestFullscreen) {
+                    canvas.requestFullscreen();
+                } else if (canvas.mozRequestFullScreen) { // Pour Firefox
+                    canvas.mozRequestFullScreen();
+                } else if (canvas.webkitRequestFullscreen) { // Pour Safari (ancienne version)
+                    canvas.webkitRequestFullscreen();
+                } else if (canvas.msRequestFullscreen) { // Pour Internet Explorer / Edge
+                    canvas.msRequestFullscreen();
+                }
+
+                // Cacher le bouton "Start Game"
                 startButton.style.display = "none";
-                // Ici, vous pouvez ajouter le code pour initialiser et démarrer le jeu
-                // Par exemple, l'appel à la fonction update() ou tout autre code de démarrage du jeu.
             }
 
             // Ajout d'un gestionnaire d'événements au clic sur le bouton
@@ -538,6 +699,7 @@
             // Démarrer le jeu
             playerSprites.idleRight[0].onload = function () 
             {
+                loadPlatformImages(); // Charger les images des plateformes
                 update();
             };
 
