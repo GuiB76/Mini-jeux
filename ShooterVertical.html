@@ -1,164 +1,229 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #f0f0f0;
-  }
-  canvas {
-    border: 2px solid black;
-  }
-</style>
-<title>Shooter Game</title>
-</head>
-<body>
-<canvas id="gameCanvas"></canvas>
+<html lang="fr">
 
-<script>
-  // JOUEUR
-  const playerImage = new Image();
-  playerImage.src = 'spritesAvions/Aircraft_10.png'; // Remplacez par le chemin de l'image du joueur
-  // ENNEMIS
-  const obstacleImage = new Image();
-  obstacleImage.src = 'spritesAvions/Aircraft_02.png'; // Remplacez par le chemin de l'image de l'obstacle
-  // Projectiles Joueur
-  const projectileImage = new Image();
-  projectileImage.src = 'spritesAvions/bullet_orange0004.png'; // Remplacez par le chemin de l'image du projectile
-</script>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shooter Game</title>
 
-
-<script>
-
-  const canvas = document.getElementById("gameCanvas");
-  const ctx = canvas.getContext("2d");
-
-  const canvasWidth = 300;
-  const canvasHeight = 700;
-  canvas.width = canvasWidth;
-  canvas.height = canvasHeight;
-
-  const player = 
-  {
-    x: canvasWidth / 2 - 15,
-    y: canvasHeight - 50,
-    width: 45,
-    height: 45,
-    speed: 5,
-  };
-
-  let obstacles = [];
-  let projectiles = [];
-  let score = 0;
-  let lastProjectileTime = 0;
-  let gameOver = false;
-
-  let keys = {
-    37: false, // Left arrow
-    39: false, // Right arrow
-    32: false, // Spacebar
-  };
-
-  function update() 
-  {
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-    if (gameOver) 
-    {
-      ctx.fillStyle = "#000000";
-      ctx.font = "30px Arial";
-      ctx.fillText("Game Over", canvasWidth / 2 - 70, canvasHeight / 2);
-      return;
-    }
-
-    // Update player
-    if (keys[37]) { // Left arrow
-      player.x -= player.speed;
-    }
-    if (keys[39]) { // Right arrow
-      player.x += player.speed;
-    }
-
-    player.x = (player.x + canvasWidth) % canvasWidth; // Wrap around canvas
-
-    if (keys[32] && Date.now() - lastProjectileTime >= 300) { // Spacebar
-      projectiles.push({ x: player.x + player.width / 2, y: player.y });
-      lastProjectileTime = Date.now();
-    }
-
-    // Update and draw obstacles
-    obstacles.forEach(obstacle => {
-      obstacle.y += 1;
-      ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, 45, 45);
-
-      // Check for collision with player
-      if (player.x + player.width > obstacle.x &&
-          player.x < obstacle.x + 30 &&
-          player.y + player.height > obstacle.y &&
-          player.y < obstacle.y + 30) {
-        gameOver = true;
+    <style>
+      body 
+      {
+        margin: 0; overflow: hidden; display: flex; justify-content: center; 
+        align-items: center; height: 100vh; background-color: white;
       }
-    });
+      canvas 
+      {
+        border: 2px solid black;
+      }
+    </style>
 
-    // Update and draw projectiles
-    projectiles.forEach(projectile => {
-      projectile.y -= 5;
-      ctx.drawImage(projectileImage, projectile.x, projectile.y, 5, 10);
+  </head>
 
-      // Check for collision with obstacles
-      obstacles.forEach(obstacle => {
-        if (projectile.x + 5 > obstacle.x &&
-            projectile.x < obstacle.x + 30 &&
-            projectile.y + 10 > obstacle.y &&
-            projectile.y < obstacle.y + 30) {
-          score += 1;
-          obstacles.splice(obstacles.indexOf(obstacle), 1);
-          projectiles.splice(projectiles.indexOf(projectile), 1);
+  <body>
+
+    <main>
+      <canvas id="gameCanvas"></canvas>
+    </main>
+
+    <script>
+
+      // CANVAS
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const canvasWidth = 300;
+      const canvasHeight = 700;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      // SPRITE JOUEUR
+      const playerImage = new Image();
+      playerImage.src = 'spritesAvions/Aircraft_10.png';
+      // SPRITE OBSTACLE
+      const obstacleImage = new Image();
+      obstacleImage.src = 'spritesAvions/Aircraft_02.png';
+      // SPRITE PROJECTILE
+      const projectileImage = new Image();
+      projectileImage.src = 'spritesAvions/bullet_orange0004.png';
+      // SPRITES EXPLOSIONS
+      const explosionImages = [];
+      for (let i = 1; i <= 4; i++) 
+      {
+        const image = new Image();
+        image.src = `spritesExplosions/explosion_${i}.png`;
+        explosionImages.push(image);
+      }
+
+      // JOUEUR
+      const player = 
+      {
+        x: canvasWidth / 2 - 15,
+        y: canvasHeight - 50,
+        width: 45,
+        height: 45,
+        speed: 5,
+      };
+
+      // VARIABLES
+      let obstacles = [];
+      let projectiles = [];
+      let score = 0;
+      let lastProjectileTime = 0;
+      let gameOver = false;
+      let ammunition = 50;
+      let reloadTimer = 0;
+
+      // TOUCHES DE CONTROLE  
+      let keys = 
+      {
+        37: false, // Left arrow
+        39: false, // Right arrow
+        32: false, // Spacebar
+      };
+
+      // FONCTION DE COLLISION
+      function collisionWithProjectile(obstacle, projectile) 
+      {
+        return (
+          projectile.x + 5 > obstacle.x &&
+          projectile.x < obstacle.x + 50 &&
+          projectile.y + 10 > obstacle.y &&
+          projectile.y < obstacle.y + 30
+        );
+      }
+
+      // ------------------------------------------------------------------------------------------------------------------- \\
+      // -----------------------------------------------------UPDATE---------------------------------------------------------\\
+      // ------------------------------------------------------------------------------------------------------------------- \\
+
+      function update() 
+      {
+
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        if (gameOver) 
+        {
+          ctx.fillStyle = "#000000";
+          ctx.font = "30px Arial";
+          ctx.fillText("Game Over", canvasWidth / 2 - 70, canvasHeight / 2);
+          return;
         }
-      });
 
-      if (projectile.y < 0) {
-        projectiles.splice(projectiles.indexOf(projectile), 1);
+        if (keys[37]) { player.x -= player.speed; } // LEFT ARROW
+        if (keys[39]) { player.x += player.speed; } // RIGHT ARROW
+
+        // Gestion du rebondissement pour les deux côtés
+        if (player.x < 0) { player.x = 0; }
+        if (player.x + player.width > canvasWidth) { player.x = canvasWidth - player.width; }
+
+        player.x = (player.x + canvasWidth) % canvasWidth;
+
+        obstacles.forEach((obstacle, index) => 
+        {
+          obstacle.y += 1;
+          if (player.x + player.width > obstacle.x &&
+              player.x < obstacle.x + 30 &&
+              player.y + player.height > obstacle.y &&
+              player.y < obstacle.y + 30) 
+          {
+            gameOver = true;
+          }
+          projectiles.forEach((projectile, pIndex) => 
+          {
+            if (collisionWithProjectile(obstacle, projectile)) 
+            {
+              obstacle.animationFrame = 0;
+              obstacle.animationTime = Date.now();
+              obstacles.splice(index, 1);
+              projectiles.splice(pIndex, 1);
+              score += 1;
+            }
+          });
+          if (obstacle.animationFrame !== undefined) 
+          {
+            const now = Date.now();
+            const timeElapsed = now - obstacle.animationTime;
+            if (timeElapsed > 100) 
+            {
+              obstacle.animationTime = now;
+              obstacle.animationFrame++;
+              if (obstacle.animationFrame >= explosionImages.length) 
+              {
+                obstacles.splice(index, 1);
+              }
+            }
+            ctx.drawImage(explosionImages[obstacle.animationFrame], obstacle.x, obstacle.y, 45, 45);
+          }
+          else 
+          {
+            ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, 45, 45);
+          }
+        });
+
+        projectiles.forEach((projectile, index) => 
+        {
+          projectile.y -= 5;
+          if (projectile.y < 0) 
+          {
+            projectiles.splice(index, 1);
+          } 
+          else 
+          {
+            ctx.drawImage(projectileImage, projectile.x, projectile.y, 5, 10);
+          }
+        });
+
+        ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+
+        // SCORE
+        ctx.fillStyle = "#000000";
+        ctx.font = "20px Arial";
+        ctx.fillText(`Score: ${score}`, 10, 30);
+
+        // DECOMPTE PROJECTILES
+        if (keys[32] && Date.now() - lastProjectileTime >= 300 && ammunition > 0) 
+        { // Spacebar
+          projectiles.push({ x: player.x + player.width / 2, y: player.y });
+          lastProjectileTime = Date.now();
+          ammunition--;
+        }
+        // Mettre à jour le temps de rechargement
+        if (ammunition < 50) 
+        {
+          reloadTimer += 1;
+          if (reloadTimer >= 180) 
+          { // 3 secondes (60 fps * 3)
+            ammunition = 50;
+            reloadTimer = 0;
+          }
+        }
+
+        // Dessiner le compteur de munitions et le temps de recharge
+        ctx.fillStyle = "#000000";
+        ctx.font = "16px Arial";
+        ctx.fillText(`Ammunition: ${ammunition}`, canvasWidth - 120, canvasHeight - 10);
+        ctx.fillText(`Reload: ${(reloadTimer / 60).toFixed(1)}s`, canvasWidth - 120, canvasHeight - 30);
+
+        requestAnimationFrame(update);
+
       }
-    });
 
-    // Draw player
-    ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
 
-    // Draw score
-    ctx.fillStyle = "#000000";
-    ctx.font = "20px Arial";
-    ctx.fillText(`Score: ${score}`, 10, 30);
+      // ------------------------------------------------------------------------------------------------------------------- \\
+      // --------------------------gestion des événements clavier, intervalles d'obstacles, etc.)----------------------------\\
+      // ------------------------------------------------------------------------------------------------------------------- \\
 
-    requestAnimationFrame(update);
-  }
+      function handleKeydown(event) { keys[event.keyCode] = true; }
+      function handleKeyup(event) { keys[event.keyCode] = false; }
 
-  function handleKeydown(event) {
-    keys[event.keyCode] = true;
-  }
+      setInterval(() => { if (!gameOver) { obstacles.push({ x: Math.random() * (canvasWidth - 30), y: -30 }); } }, 1500);
 
-  function handleKeyup(event) {
-    keys[event.keyCode] = false;
-  }
+      window.addEventListener("keydown", handleKeydown);
+      window.addEventListener("keyup", handleKeyup);
 
-  // Create obstacles at regular intervals
-  setInterval(() => {
-    if (!gameOver) {
-      obstacles.push({ x: Math.random() * (canvasWidth - 30), y: -30 });
-    }
-  }, 1500);
+      update();
 
-  window.addEventListener("keydown", handleKeydown);
-  window.addEventListener("keyup", handleKeyup);
+    </script>
 
-  update();
-</script>
-</body>
+  </body>
 </html>
