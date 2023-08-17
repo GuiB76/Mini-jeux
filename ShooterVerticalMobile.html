@@ -7,30 +7,35 @@
     <title>Shooter Game</title>
 
     <style>
-      body 
-      {
-        margin: 0; overflow: hidden; display: flex; justify-content: center; 
-        /* align-items: center; */ height: 100vh; background-color: white;
-      }
-      canvas 
-      {
-        border: 2px solid black;
-      }
-      #controls 
-      {
-        position: absolute; bottom: 20px; display: flex;
-        justify-content: space-between; width: 100%; padding: 0 20px;
-      }
-      #joystick 
-      {
-        width: 100px; height: 100px; background-color: #ddd; border-radius: 50%;
-        display: flex; justify-content: center; align-items: center; cursor: pointer;
-      }
-      #fireButton 
-      {
-        width: 60px; height: 60px; background-color: #f00; border-radius: 50%;
-        display: flex; justify-content: center; align-items: center; cursor: pointer;
-      }
+        body 
+        {
+            margin: 0; overflow: hidden; display: flex; justify-content: center; 
+            /* align-items: center; */ height: 100vh; background-color: white;
+        }
+        canvas 
+        {
+            border: 2px solid black;
+        }
+        #controls 
+        {
+            position: absolute; bottom: 20px; display: flex;
+            justify-content: space-between; width: 100%; padding: 0 20px;
+        }
+        #joystick 
+        {
+            width: 100px; height: 100px; background-color: #ddd; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+        }
+        #fireButton 
+        {
+            width: 60px; height: 60px; background-color: #f00; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+        }
+        #joystick, #fireButton 
+        {
+            user-select: none; /* Empêcher la sélection de texte */
+            outline: none; /* Supprimer l'effet de surbrillance */
+        }
     </style>
 
   </head>
@@ -154,7 +159,6 @@
         {
             clearInterval(firingInterval); // Arrêter de tirer lorsque le bouton est relâché
         });
-
 
         // FONCTION DE TIR DE PROJECTILE
         function fireProjectile() 
