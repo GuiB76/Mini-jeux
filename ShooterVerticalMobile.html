@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shooter Game</title>
+
+    <style>
+      body 
+      {
+        margin: 0; overflow: hidden; display: flex; justify-content: center; 
+        /* align-items: center; */ height: 100vh; background-color: white;
+      }
+      canvas 
+      {
+        border: 2px solid black;
+      }
+      #controls 
+      {
+        position: absolute; bottom: 20px; display: flex;
+        justify-content: space-between; width: 100%; padding: 0 20px;
+      }
+      #joystick 
+      {
+        width: 100px; height: 100px; background-color: #ddd; border-radius: 50%;
+        display: flex; justify-content: center; align-items: center; cursor: pointer;
+      }
+      #fireButton 
+      {
+        width: 60px; height: 60px; background-color: #f00; border-radius: 50%;
+        display: flex; justify-content: center; align-items: center; cursor: pointer;
+      }
+    </style>
+
+  </head>
+
+  <body>
+
+    <main>
+      <canvas id="gameCanvas"></canvas>
+    </main>
+
+    <div id="controls">
+        <div id="joystick"></div>
+        <div id="fireButton" style=" font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;">TIR</div>
+    </div>
+
+    <script>
+
+        // CANVAS
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const canvasWidth = 300;
+        const canvasHeight = 600;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // SPRITE JOUEUR
+        const playerImage = new Image();
+        playerImage.src = 'spritesAvions/Aircraft_10.png';
+        // SPRITE OBSTACLE
+        const obstacleImage = new Image();
+        obstacleImage.src = 'spritesAvions/Aircraft_02.png';
+        // SPRITE PROJECTILE
+        const projectileImage = new Image();
+        projectileImage.src = 'spritesAvions/bullet_orange0004.png';
+        // SPRITES EXPLOSIONS
+        const explosionImages = [];
+        for (let i = 1; i <= 4; i++) 
+        {
+            const image = new Image();
+            image.src = `spritesExplosions/explosion_${i}.png`;
+            explosionImages.push(image);
+        }
+
+        // JOUEUR
+        const player = 
+        {
+            x: canvasWidth / 2 - 15,
+            y: canvasHeight - 75,
+            width: 45,
+            height: 45,
+            speed: 5,
+        };
+
+        // VARIABLES
+        let obstacles = [];
+        let projectiles = [];
+        let score = 0;
+        let lastProjectileTime = 0;
+        let gameOver = false;
+        let ammunition = 50;
+        let reloadTimer = 0;
+        let reloading = false;
+
+        // Contrôles tactiles
+        const joystick = document.getElementById("joystick");
+        const fireButton = document.getElementById("fireButton");
+        // Variables de déplacement
+        let touchX = 0;
+        let joystickWidth = joystick.clientWidth;
+        let movingLeft = false;
+        let movingRight = false;
+        // Variable pour garder une référence de l'intervalle de tir
+        let firingInterval;
+        // Variable pour suivre si le bouton de tir est actuellement enfoncé
+        let isFiring = false;   
+        // Événement de déplacement du joystick
+        joystick.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; });
+        joystick.addEventListener('touchmove', (e) => 
+        {
+            const newTouchX = e.touches[0].clientX;
+            const deltaX = newTouchX - touchX;
+            touchX = newTouchX;
+            // Déplacer le joueur en fonction du mouvement tactile
+            player.x += deltaX * (player.speed / 10);
+            // Gestion du rebondissement pour les deux côtés
+            if (player.x < 0) 
+            {
+                player.x = 0;
+            }
+            if (player.x + player.width > canvasWidth) 
+            {
+                player.x = canvasWidth - player.width;
+            }
+            e.preventDefault();
+        });
+        // Événement de relâchement du joystick
+        joystick.addEventListener('touchend', () => 
+        {
+            movingLeft = false;
+            movingRight = false;
+        });
+        // Événement de pression du bouton de tir
+        fireButton.addEventListener('touchstart', () => 
+        {
+            if (ammunition > 0) 
+            {
+                // Commencer à tirer à intervalles réguliers
+                firingInterval = setInterval(() => 
+                {
+                    fireProjectile();
+                    ammunition--;
+                    if (ammunition === 0) 
+                    {
+                        clearInterval(firingInterval); // Arrêter de tirer lorsque plus de munitions
+                    }
+                }, 300); // Intervalle entre les tirs (300 ms dans cet exemple)
+            }
+        });
+        // Événement de relâchement du bouton de tir
+        fireButton.addEventListener('touchend', () => 
+        {
+            clearInterval(firingInterval); // Arrêter de tirer lorsque le bouton est relâché
+        });
+
+
+        // FONCTION DE TIR DE PROJECTILE
+        function fireProjectile() 
+        {
+            if (Date.now() - lastProjectileTime >= 300) 
+            {
+                projectiles.push({ x: player.x + player.width / 2, y: player.y });
+                lastProjectileTime = Date.now();
+            }
+        }
+
+        // FONCTION DE COLLISION
+        function collisionWithProjectile(obstacle, projectile) 
+        {
+            return (
+            projectile.x + 5 > obstacle.x &&
+            projectile.x < obstacle.x + 50 &&
+            projectile.y + 10 > obstacle.y &&
+            projectile.y < obstacle.y + 30
+            );
+        }
+
+        // ------------------------------------------------------------------------------------------------------------------- \\
+        // -----------------------------------------------------UPDATE---------------------------------------------------------\\
+        // ------------------------------------------------------------------------------------------------------------------- \\
+
+        function update() 
+        {
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            if (gameOver) 
+            {
+                ctx.fillStyle = "#000000";
+                ctx.font = "30px Arial";
+                ctx.fillText("Game Over", canvasWidth / 2 - 70, canvasHeight / 2);
+                return;
+            }
+
+            // Contrôles de mouvement
+            if (movingLeft) { player.x -= player.speed; }
+            if (movingRight) { player.x += player.speed; }
+
+            // Gestion du rebondissement pour les deux côtés
+            if (player.x < 0) { player.x = 0; }
+            if (player.x + player.width > canvasWidth) { player.x = canvasWidth - player.width; }
+
+            player.x = (player.x + canvasWidth) % canvasWidth;
+
+            obstacles.forEach((obstacle, index) => 
+            {
+            obstacle.y += 1;
+            if (player.x + player.width > obstacle.x &&
+                player.x < obstacle.x + 30 &&
+                player.y + player.height > obstacle.y &&
+                player.y < obstacle.y + 30) 
+            {
+                gameOver = true;
+            }
+            projectiles.forEach((projectile, pIndex) => 
+            {
+                if (collisionWithProjectile(obstacle, projectile)) 
+                {
+                obstacle.animationFrame = 0;
+                obstacle.animationTime = Date.now();
+                obstacles.splice(index, 1);
+                projectiles.splice(pIndex, 1);
+                score += 1;
+                }
+            });
+            if (obstacle.animationFrame !== undefined) 
+            {
+                const now = Date.now();
+                const timeElapsed = now - obstacle.animationTime;
+                if (timeElapsed > 100) 
+                {
+                    obstacle.animationTime = now;
+                    obstacle.animationFrame++;
+                    if (obstacle.animationFrame >= explosionImages.length) 
+                    {
+                        obstacles.splice(index, 1);
+                    }
+                }
+                ctx.drawImage(explosionImages[obstacle.animationFrame], obstacle.x, obstacle.y, 45, 45);
+            }
+            else 
+            {
+                ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, 45, 45);
+            };
+            });
+
+            projectiles.forEach((projectile, index) => 
+            {
+                projectile.y -= 5;
+                if (projectile.y < 0) 
+                {
+                    projectiles.splice(index, 1);
+                } 
+                else 
+                {
+                    ctx.drawImage(projectileImage, projectile.x, projectile.y, 5, 10);
+                }
+            });
+
+            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+
+            // SCORE
+            ctx.fillStyle = "#000000";
+            ctx.font = "20px Arial";
+            ctx.fillText(`Score: ${score}`, 10, 30);
+
+            // Mettre à jour le temps de rechargement
+            if (ammunition === 0 && !reloading) 
+            {
+                reloading = true;
+                reloadTimer = 0;
+            }
+            if (reloading) 
+            { // 3 secondes (60 fps * 3)
+                reloadTimer += 1;
+                if (reloadTimer >= 300)
+                {
+                    ammunition = 50;
+                    reloading = false;
+                }
+            }
+            // Dessiner le compteur de munitions et le temps de recharge
+            ctx.fillStyle = "#000000";
+            ctx.font = "16px Arial";
+            ctx.fillText(`Ammunition: ${ammunition}`, canvasWidth - 120, canvasHeight - 10);
+            ctx.fillText(`Reload: ${(reloadTimer / 60).toFixed(1)}s`, canvasWidth - 120, canvasHeight - 30);
+
+            requestAnimationFrame(update);
+
+        }
+
+      // ------------------------------------------------------------------------------------------------------------------- \\
+      // --------------------------gestion des événements, intervalles d'obstacles, etc.)----------------------------\\
+      // ------------------------------------------------------------------------------------------------------------------- \\
+
+      setInterval(() => { if (!gameOver) { obstacles.push({ x: Math.random() * (canvasWidth - 30), y: -30 }); } }, 1500);
+
+      update();
+
+    </script>
+
+  </body>
+
+</html>
