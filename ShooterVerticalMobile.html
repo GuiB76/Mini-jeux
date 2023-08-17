@@ -10,7 +10,7 @@
         body 
         {
             margin: 0; overflow: hidden; display: flex; justify-content: center; 
-            /* align-items: center; */ height: 100vh; background-color: white;
+            /* align-items: center; */ height: 100%; background-color: white;
         }
         canvas 
         {
@@ -19,9 +19,9 @@
         #controls 
         {
             position: absolute; bottom: 20px; display: flex;
-            justify-content: space-between; width: 100%; padding: 0 20px;
+            justify-content: space-between; width: 90%; padding: 0 20px;
         }
-        #joystick, #fireButton 
+        #joystick 
         {
             user-select: none; /* Empêcher la sélection de texte */
             outline: none; /* Supprimer l'effet de surbrillance */
@@ -29,26 +29,39 @@
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            border: 2px solid #ddd;
-            background-color: #f0f0f0;
+            border: 2px solid #333; /* Bordure grise foncée */
+            background-color: #ccc; /* Fond gris clair */
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 100px;
+            height: 100px;
+            position: relative;
         }
-
-        #joystick 
+        #joystick .inner-circle 
         {
-            margin-right: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #ccc; /* Fond gris clair */
+            border: 2px solid #333; /* Bordure grise foncée */
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
-
         #fireButton 
         {
+            user-select: none; /* Empêcher la sélection de texte */
+            outline: none; /* Supprimer l'effet de surbrillance */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
             background-color: #f00;
             color: white;
             font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-            font-size: 16px;
+            font-size: 20px;
             font-weight: bold;
-            padding: 10px;
+            padding: 30px;
             border: none;
             border-radius: 10px;
         }
@@ -63,8 +76,10 @@
     </main>
 
     <div id="controls">
-        <div id="joystick"></div>
-        <div id="fireButton" style=" font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;">TIR</div>
+        <div id="joystick">
+            <div class="inner-circle"></div>
+        </div>
+        <div id="fireButton">TIR</div>
     </div>
 
     <script>
@@ -72,7 +87,7 @@
         // CANVAS
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        const canvasWidth = 300;
+        const canvasWidth = 350;
         const canvasHeight = 600;
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
