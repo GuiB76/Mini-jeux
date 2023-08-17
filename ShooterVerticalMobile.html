@@ -145,7 +145,7 @@
             const deltaX = newTouchX - touchX;
             touchX = newTouchX;
             // Déplacer le joueur en fonction du mouvement tactile
-            player.x += deltaX * (player.speed / 10);
+            player.x += deltaX * (player.speed / joystickWidth);
             // Gestion du rebondissement pour les deux côtés
             if (player.x < 0) 
             {
