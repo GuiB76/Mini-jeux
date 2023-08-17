@@ -21,20 +21,36 @@
             position: absolute; bottom: 20px; display: flex;
             justify-content: space-between; width: 100%; padding: 0 20px;
         }
-        #joystick 
-        {
-            width: 100px; height: 100px; background-color: #ddd; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; cursor: pointer;
-        }
-        #fireButton 
-        {
-            width: 60px; height: 60px; background-color: #f00; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; cursor: pointer;
-        }
         #joystick, #fireButton 
         {
             user-select: none; /* Empêcher la sélection de texte */
             outline: none; /* Supprimer l'effet de surbrillance */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            background-color: #f0f0f0;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+        }
+
+        #joystick 
+        {
+            margin-right: 10px;
+        }
+
+        #fireButton 
+        {
+            background-color: #f00;
+            color: white;
+            font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
         }
     </style>
 
