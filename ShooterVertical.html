@@ -72,6 +72,7 @@
       let gameOver = false;
       let ammunition = 50;
       let reloadTimer = 0;
+      let reloading = false;
 
       // TOUCHES DE CONTROLE  
       let keys = 
@@ -188,16 +189,20 @@
           ammunition--;
         }
         // Mettre à jour le temps de rechargement
-        if (ammunition < 50) 
+        if (ammunition === 0 && !reloading) 
         {
+          reloading = true;
+          reloadTimer = 0;
+        }
+        if (reloading) 
+        { // 3 secondes (60 fps * 3)
           reloadTimer += 1;
-          if (reloadTimer >= 180) 
-          { // 3 secondes (60 fps * 3)
+          if (reloadTimer >= 300)
+          {
             ammunition = 50;
-            reloadTimer = 0;
+            reloading = false;
           }
         }
-
         // Dessiner le compteur de munitions et le temps de recharge
         ctx.fillStyle = "#000000";
         ctx.font = "16px Arial";
@@ -207,7 +212,6 @@
         requestAnimationFrame(update);
 
       }
-
 
       // ------------------------------------------------------------------------------------------------------------------- \\
       // --------------------------gestion des événements clavier, intervalles d'obstacles, etc.)----------------------------\\
@@ -226,4 +230,5 @@
     </script>
 
   </body>
+
 </html>
