@@ -136,70 +136,35 @@
         // Variable pour garder une référence de l'intervalle de tir
         let firingInterval;
         // Variable pour suivre si le bouton de tir est actuellement enfoncé
-        let isFiring = false;  
-
-
-// Variables de déplacement
-let moveDirection = 0; // 0 pour ne pas bouger, -1 pour gauche, 1 pour droite
-// Fonction de mise à jour des déplacements
-function updateMovement() {
-  if (movingLeft) {
-    player.x -= player.speed;
-  }
-  if (movingRight) {
-    player.x += player.speed;
-  }
-
-  // Gestion du rebondissement pour les deux côtés
-  if (player.x < 0) {
-    player.x = 0;
-  }
-  if (player.x + player.width > canvasWidth) {
-    player.x = canvasWidth - player.width;
-  }
-}
-// Événement de déplacement du joystick
-joystick.addEventListener('touchstart', (e) => {
-  const touchX = e.touches[0].clientX;
-  const joystickX = joystick.getBoundingClientRect().left + joystickWidth / 2;
-
-  // Décider si le joueur doit aller à gauche, à droite ou s'arrêter
-  if (touchX < joystickX - joystickWidth / 4) {
-    movingLeft = true;
-    movingRight = false;
-  } else if (touchX > joystickX + joystickWidth / 4) {
-    movingLeft = false;
-    movingRight = true;
-  }
-  e.preventDefault(); // Empêche la sélection de texte
-});
-// Événement de déplacement continu du joystick
-joystick.addEventListener('touchmove', (e) => {
-  const touchX = e.touches[0].clientX;
-  const joystickX = joystick.getBoundingClientRect().left + joystickWidth / 2;
-
-  // Décider si le joueur doit aller à gauche, à droite ou s'arrêter
-  if (touchX < joystickX - joystickWidth / 4) {
-    movingLeft = true;
-    movingRight = false;
-  } else if (touchX > joystickX + joystickWidth / 4) {
-    movingLeft = false;
-    movingRight = true;
-  } else {
-    movingLeft = false;
-    movingRight = false;
-  }
-  e.preventDefault(); // Empêche la sélection de texte
-});
-// Événement de relâchement du joystick
-joystick.addEventListener('touchend', () => {
-  movingLeft = false;
-  movingRight = false;
-});
-
-
+        let isFiring = false;   
+        // Événement de déplacement du joystick
+        joystick.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; });
+        joystick.addEventListener('touchmove', (e) => 
+        {
+            const newTouchX = e.touches[0].clientX;
+            const deltaX = newTouchX - touchX;
+            touchX = newTouchX;
+            // Déplacer le joueur en fonction du mouvement tactile
+            player.x += deltaX * (player.speed / 3);
+            // Gestion du rebondissement pour les deux côtés
+            if (player.x < 0) 
+            {
+                player.x = 0;
+            }
+            if (player.x + player.width > canvasWidth) 
+            {
+                player.x = canvasWidth - player.width;
+            }
+            e.preventDefault();
+        });
+        // Événement de relâchement du joystick
+        joystick.addEventListener('touchend', () => 
+        {
+            movingLeft = false;
+            movingRight = false;
+        });
         // Événement de pression du bouton de tir
-        fireButton.addEventListener('touchstart', (e) => 
+        fireButton.addEventListener('touchstart', () => 
         {
             if (ammunition > 0) 
             {
@@ -214,7 +179,6 @@ joystick.addEventListener('touchend', () => {
                     }
                 }, 300); // Intervalle entre les tirs (300 ms dans cet exemple)
             }
-            e.preventDefault(); // Empêche la sélection de texte
         });
         // Événement de relâchement du bouton de tir
         fireButton.addEventListener('touchend', () => 
@@ -269,7 +233,6 @@ joystick.addEventListener('touchend', () => {
             if (player.x + player.width > canvasWidth) { player.x = canvasWidth - player.width; }
 
             player.x = (player.x + canvasWidth) % canvasWidth;
-
 
             obstacles.forEach((obstacle, index) => 
             {
@@ -327,8 +290,6 @@ joystick.addEventListener('touchend', () => {
             });
 
             ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
-
-            updateMovement();
 
             // SCORE
             ctx.fillStyle = "#000000";
