@@ -69,7 +69,7 @@
     <main>
       <canvas id="gameCanvas"></canvas>
     </main>
-    <br><br>
+    <br><br><br><br>
     <div id="controls">
         <div id="joystick">
             <div class="inner-circle"></div>
@@ -139,63 +139,37 @@
         let isFiring = false;  
 
 
-// Variables de déplacement
-let moveDirection = 0; // 0 pour ne pas bouger, -1 pour gauche, 1 pour droite
-// Fonction de mise à jour des déplacements
-function updateMovement() {
-  if (movingLeft) {
-    player.x -= player.speed;
-  }
-  if (movingRight) {
-    player.x += player.speed;
-  }
 
-  // Gestion du rebondissement pour les deux côtés
-  if (player.x < 0) {
-    player.x = 0;
-  }
-  if (player.x + player.width > canvasWidth) {
-    player.x = canvasWidth - player.width;
-  }
-}
+
 // Événement de déplacement du joystick
 joystick.addEventListener('touchstart', (e) => {
-  const touchX = e.touches[0].clientX;
-  const joystickX = joystick.getBoundingClientRect().left + joystickWidth / 2;
-
-  // Décider si le joueur doit aller à gauche, à droite ou s'arrêter
-  if (touchX < joystickX - joystickWidth / 4) {
-    movingLeft = true;
-    movingRight = false;
-  } else if (touchX > joystickX + joystickWidth / 4) {
-    movingLeft = false;
-    movingRight = true;
-  }
+  touchX = e.touches[0].clientX;
   e.preventDefault(); // Empêche la sélection de texte
 });
+
 // Événement de déplacement continu du joystick
 joystick.addEventListener('touchmove', (e) => {
-  const touchX = e.touches[0].clientX;
-  const joystickX = joystick.getBoundingClientRect().left + joystickWidth / 2;
-
-  // Décider si le joueur doit aller à gauche, à droite ou s'arrêter
-  if (touchX < joystickX - joystickWidth / 4) {
-    movingLeft = true;
-    movingRight = false;
-  } else if (touchX > joystickX + joystickWidth / 4) {
-    movingLeft = false;
-    movingRight = true;
-  } else {
-    movingLeft = false;
-    movingRight = false;
-  }
+  touchX = e.touches[0].clientX;
   e.preventDefault(); // Empêche la sélection de texte
 });
+
 // Événement de relâchement du joystick
 joystick.addEventListener('touchend', () => {
-  movingLeft = false;
-  movingRight = false;
+  touchX = 0;
 });
+function updateMovement() {
+  // Utiliser la position horizontale du doigt pour déplacer le joueur
+  if (touchX !== 0) {
+    const joystickX = joystick.getBoundingClientRect().left;
+    const normalizedX = (touchX - joystickX) / joystickWidth;
+    
+    if (normalizedX < 0.3) {
+      player.x -= player.speed;
+    } else if (normalizedX > 0.7) {
+      player.x += player.speed;
+    }
+  }
+}
 
 
         // Événement de pression du bouton de tir
