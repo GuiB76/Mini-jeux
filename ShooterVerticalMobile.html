@@ -171,31 +171,26 @@ if (!isFiring) {
       }
     }
 }}
-
-
-        // Événement de pression du bouton de tir
-        fireButton.addEventListener('touchstart', (e) => 
-        {
-            if (ammunition > 0) 
-            {
-                // Commencer à tirer à intervalles réguliers
-                firingInterval = setInterval(() => 
-                {
-                    fireProjectile();
-                    ammunition--;
-                    if (ammunition === 0) 
-                    {
-                        clearInterval(firingInterval); // Arrêter de tirer lorsque plus de munitions
-                    }
-                }, 300); // Intervalle entre les tirs (300 ms dans cet exemple)
-            }
-            e.preventDefault(); // Empêche la sélection de texte
-        });
-        // Événement de relâchement du bouton de tir
-        fireButton.addEventListener('touchend', () => 
-        {
-            clearInterval(firingInterval); // Arrêter de tirer lorsque le bouton est relâché
-        });
+// Événement de pression du bouton de tir
+fireButton.addEventListener('touchstart', (e) => {
+  if (ammunition > 0) {
+    // Commencer à tirer à intervalles réguliers
+    firingInterval = setInterval(() => {
+      fireProjectile();
+      ammunition--;
+      if (ammunition === 0) {
+        clearInterval(firingInterval); // Arrêter de tirer lorsque plus de munitions
+      }
+    }, 300); // Intervalle entre les tirs (300 ms dans cet exemple)
+    isFiring = true; // Marquer que le bouton de tir est enfoncé
+  }
+  e.preventDefault(); // Empêche la sélection de texte
+});
+// Événement de relâchement du bouton de tir
+fireButton.addEventListener('touchend', () => {
+  clearInterval(firingInterval); // Arrêter de tirer lorsque le bouton est relâché
+  isFiring = false; // Marquer que le bouton de tir est relâché
+});
 
         // FONCTION DE TIR DE PROJECTILE
         function fireProjectile() 
