@@ -158,18 +158,19 @@ joystick.addEventListener('touchend', () => {
   touchX = 0;
 });
 function updateMovement() {
-  // Utiliser la position horizontale du doigt pour déplacer le joueur
-  if (touchX !== 0) {
-    const joystickX = joystick.getBoundingClientRect().left;
-    const normalizedX = (touchX - joystickX) / joystickWidth;
-    
-    if (normalizedX < 0.3) {
-      player.x -= player.speed;
-    } else if (normalizedX > 0.7) {
-      player.x += player.speed;
+// Si le bouton de tir est enfoncé, ignorer le mouvement horizontal du joystick
+if (!isFiring) {
+    if (touchX !== 0) {
+      const joystickX = joystick.getBoundingClientRect().left;
+      const normalizedX = (touchX - joystickX) / joystickWidth;
+      
+      if (normalizedX < 0.3) {
+        player.x -= player.speed;
+      } else if (normalizedX > 0.7) {
+        player.x += player.speed;
+      }
     }
-  }
-}
+}}
 
 
         // Événement de pression du bouton de tir
