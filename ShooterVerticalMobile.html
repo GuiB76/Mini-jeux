@@ -139,58 +139,70 @@
         let isFiring = false;  
 
 
+        // Événement de déplacement du joystick
+        joystick.addEventListener('touchstart', (e) => 
+        {
+          touchX = e.touches[0].clientX;
+          e.preventDefault(); // Empêche la sélection de texte
+        });
+
+        // Événement de déplacement continu du joystick
+        joystick.addEventListener('touchmove', (e) => 
+        {
+          touchX = e.touches[0].clientX;
+          e.preventDefault(); // Empêche la sélection de texte
+        });
+
+        // Événement de relâchement du joystick
+        joystick.addEventListener('touchend', () => 
+        {
+          touchX = 0;
+        });
+        function updateMovement() 
+        {
+          // Utiliser la position horizontale du doigt pour déplacer le joueur
+          if (touchX !== 0) 
+          {
+            const joystickX = joystick.getBoundingClientRect().left;
+            const normalizedX = (touchX - joystickX) / joystickWidth;
+            
+            if (normalizedX < 0.45 || normalizedX < 0.45 && isFiring === true) 
+            {
+              player.x -= player.speed;
+            } 
+            else if (normalizedX > 0.55 || normalizedX > 0.55 && isFiring === true) 
+            {
+              player.x += player.speed;
+            }
+          }
+        }
 
 
-// Événement de déplacement du joystick
-joystick.addEventListener('touchstart', (e) => {
-  touchX = e.touches[0].clientX;
-  e.preventDefault(); // Empêche la sélection de texte
-});
-
-// Événement de déplacement continu du joystick
-joystick.addEventListener('touchmove', (e) => {
-  touchX = e.touches[0].clientX;
-  e.preventDefault(); // Empêche la sélection de texte
-});
-
-// Événement de relâchement du joystick
-joystick.addEventListener('touchend', () => {
-  touchX = 0;
-});
-function updateMovement() {
-// Si le bouton de tir est enfoncé, ignorer le mouvement horizontal du joystick
-if (!isFiring) {
-    if (touchX !== 0) {
-      const joystickX = joystick.getBoundingClientRect().left;
-      const normalizedX = (touchX - joystickX) / joystickWidth;
-      
-      if (normalizedX < 0.3) {
-        player.x -= player.speed;
-      } else if (normalizedX > 0.7) {
-        player.x += player.speed;
-      }
-    }
-}}
-// Événement de pression du bouton de tir
-fireButton.addEventListener('touchstart', (e) => {
-  if (ammunition > 0) {
-    // Commencer à tirer à intervalles réguliers
-    firingInterval = setInterval(() => {
-      fireProjectile();
-      ammunition--;
-      if (ammunition === 0) {
-        clearInterval(firingInterval); // Arrêter de tirer lorsque plus de munitions
-      }
-    }, 300); // Intervalle entre les tirs (300 ms dans cet exemple)
-    isFiring = true; // Marquer que le bouton de tir est enfoncé
-  }
-  e.preventDefault(); // Empêche la sélection de texte
-});
-// Événement de relâchement du bouton de tir
-fireButton.addEventListener('touchend', () => {
-  clearInterval(firingInterval); // Arrêter de tirer lorsque le bouton est relâché
-  isFiring = false; // Marquer que le bouton de tir est relâché
-});
+        // Événement de pression du bouton de tir
+        fireButton.addEventListener('touchstart', (e) => 
+        {
+            if (ammunition > 0) 
+            {
+              // Commencer à tirer à intervalles réguliers
+              firingInterval = setInterval(() => 
+              {
+                  fireProjectile();
+                  isFiring = true;
+                  ammunition--;
+                  if (ammunition === 0) 
+                  {
+                      clearInterval(firingInterval); // Arrêter de tirer lorsque plus de munitions
+                      isFiring = false;
+                  }
+              }, 300); // Intervalle entre les tirs (300 ms dans cet exemple)
+            }
+            e.preventDefault(); // Empêche la sélection de texte
+        });
+        // Événement de relâchement du bouton de tir
+        fireButton.addEventListener('touchend', () => 
+        {
+            clearInterval(firingInterval); // Arrêter de tirer lorsque le bouton est relâché
+        });
 
         // FONCTION DE TIR DE PROJECTILE
         function fireProjectile() 
@@ -222,6 +234,7 @@ fireButton.addEventListener('touchend', () => {
 
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
+            // GAME OVER
             if (gameOver) 
             {
                 ctx.fillStyle = "#000000";
@@ -229,58 +242,58 @@ fireButton.addEventListener('touchend', () => {
                 ctx.fillText("Game Over", canvasWidth / 2 - 70, canvasHeight / 2);
                 return;
             }
-
+            
+            // MOUVEMENTS
             // Contrôles de mouvement
             if (movingLeft) { player.x -= player.speed; }
             if (movingRight) { player.x += player.speed; }
-
             // Gestion du rebondissement pour les deux côtés
             if (player.x < 0) { player.x = 0; }
             if (player.x + player.width > canvasWidth) { player.x = canvasWidth - player.width; }
 
             player.x = (player.x + canvasWidth) % canvasWidth;
 
-
+            // SPAWN DES OBSTACLES
             obstacles.forEach((obstacle, index) => 
             {
-            obstacle.y += 1;
-            if (player.x + player.width > obstacle.x &&
-                player.x < obstacle.x + 30 &&
-                player.y + player.height > obstacle.y &&
-                player.y < obstacle.y + 30) 
-            {
-                gameOver = true;
-            }
-            projectiles.forEach((projectile, pIndex) => 
-            {
-                if (collisionWithProjectile(obstacle, projectile)) 
-                {
-                obstacle.animationFrame = 0;
-                obstacle.animationTime = Date.now();
-                obstacles.splice(index, 1);
-                projectiles.splice(pIndex, 1);
-                score += 1;
-                }
-            });
-            if (obstacle.animationFrame !== undefined) 
-            {
-                const now = Date.now();
-                const timeElapsed = now - obstacle.animationTime;
-                if (timeElapsed > 100) 
-                {
-                    obstacle.animationTime = now;
-                    obstacle.animationFrame++;
-                    if (obstacle.animationFrame >= explosionImages.length) 
-                    {
-                        obstacles.splice(index, 1);
-                    }
-                }
-                ctx.drawImage(explosionImages[obstacle.animationFrame], obstacle.x, obstacle.y, 45, 45);
-            }
-            else 
-            {
-                ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, 45, 45);
-            };
+              obstacle.y += 1;
+              if (player.x + player.width > obstacle.x &&
+                  player.x < obstacle.x + 30 &&
+                  player.y + player.height > obstacle.y &&
+                  player.y < obstacle.y + 30) 
+              {
+                  gameOver = true;
+              }
+              projectiles.forEach((projectile, pIndex) => 
+              {
+                  if (collisionWithProjectile(obstacle, projectile)) 
+                  {
+                  obstacle.animationFrame = 0;
+                  obstacle.animationTime = Date.now();
+                  obstacles.splice(index, 1);
+                  projectiles.splice(pIndex, 1);
+                  score += 1;
+                  }
+              });
+              if (obstacle.animationFrame !== undefined) 
+              {
+                  const now = Date.now();
+                  const timeElapsed = now - obstacle.animationTime;
+                  if (timeElapsed > 100) 
+                  {
+                      obstacle.animationTime = now;
+                      obstacle.animationFrame++;
+                      if (obstacle.animationFrame >= explosionImages.length) 
+                      {
+                          obstacles.splice(index, 1);
+                      }
+                  }
+                  ctx.drawImage(explosionImages[obstacle.animationFrame], obstacle.x, obstacle.y, 45, 45);
+              }
+              else 
+              {
+                  ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, 45, 45);
+              };
             });
 
             projectiles.forEach((projectile, index) => 
